@@ -1,0 +1,21 @@
+{
+  "name": "thoi-gian-bieu-tanas",
+  "version": "3.0.0",
+  "description": "Thời Gian Biểu Tanas — Web quản lý thời gian biểu phong cách sổ tay vẽ tay kèm tài khoản đăng nhập (Ghi nhớ 30 ngày), Trợ lý AI, YouTube/Lofi Radio, Pomodoro và xuất ảnh lịch nền khóa.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "timetable",
+    "schedule",
+    "planner",
+    "tanas",
+    "nodejs"
+  ],
+  "license": "MIT"
+}

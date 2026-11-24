@@ -1,0 +1,1206 @@
+/* Google Fonts: Mali & Itim (Handwriting, Crayon & Doodle Cute with full Vietnamese support) */
+@import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
+
+:root {
+  --font-cute: 'Mali', 'Itim', cursive, -apple-system, sans-serif;
+  --bg-paper: #fffdf9;
+  --dot-color: #e2e8f0;
+  --line-color: #332d29;
+  --card-bg: #ffffff;
+  --sketch-accent: #fbcfe8;
+  --text-main: #292524;
+  --text-muted: #78716c;
+  
+  /* Cute Pastel Crayon Palette */
+  --crayon-pink: #fbcfe8;
+  --crayon-yellow: #fef08a;
+  --crayon-mint: #bbf7d0;
+  --crayon-blue: #bae6fd;
+  --crayon-purple: #e9d5ff;
+  --crayon-peach: #fed7aa;
+  --crayon-coral: #fda4af;
+
+  --shadow-sketch: 3.5px 3.5px 0px var(--line-color);
+  --shadow-sketch-lg: 5px 5px 0px var(--line-color);
+  --shadow-sketch-sm: 2px 2px 0px var(--line-color);
+}
+
+.dark {
+  --bg-paper: #1c1917;
+  --dot-color: #3f3935;
+  --line-color: #f5f5f4;
+  --card-bg: #292524;
+  --sketch-accent: #be185d;
+  --text-main: #f5f5f4;
+  --text-muted: #a8a29e;
+  
+  --crayon-pink: #831843;
+  --crayon-yellow: #713f12;
+  --crayon-mint: #14532d;
+  --crayon-blue: #0c4a6e;
+  --crayon-purple: #581c87;
+  --crayon-peach: #7c2d12;
+  --crayon-coral: #881337;
+
+  --shadow-sketch: 3.5px 3.5px 0px rgba(0, 0, 0, 0.4);
+  --shadow-sketch-lg: 5px 5px 0px rgba(0, 0, 0, 0.5);
+  --shadow-sketch-sm: 2px 2px 0px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: var(--font-cute);
+}
+
+body {
+  background-color: var(--bg-paper);
+  background-image: radial-gradient(var(--dot-color) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  color: var(--text-main);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar styled like colored pencil */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #f472b6;
+  border-radius: 9999px;
+  border: 2px solid var(--bg-paper);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #ec4899;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #db2777;
+}
+
+/* Sketchy Hand-drawn Box Style */
+.sketch-box {
+  border: 2.5px solid var(--line-color);
+  box-shadow: var(--shadow-sketch);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.board-column.sketch-box {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.board-column.sketch-box:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: var(--shadow-sketch-lg);
+}
+
+/* Washi Tape (Băng dính trang trí cute) */
+.washi-tape {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 100px;
+  height: 24px;
+  background-color: rgba(254, 240, 138, 0.85);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  border-left: 2px dashed rgba(217, 119, 6, 0.3);
+  border-right: 2px dashed rgba(217, 119, 6, 0.3);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.washi-tape.pink {
+  background-color: rgba(251, 207, 232, 0.85);
+  border-color: rgba(219, 39, 119, 0.3);
+  transform: translateX(-50%) rotate(1.2deg);
+}
+
+.washi-tape.mint {
+  background-color: rgba(187, 247, 208, 0.85);
+  border-color: rgba(22, 163, 74, 0.3);
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.washi-tape.blue {
+  background-color: rgba(186, 230, 253, 0.85);
+  border-color: rgba(2, 132, 199, 0.3);
+  transform: translateX(-50%) rotate(0.8deg);
+}
+
+.washi-tape.purple {
+  background-color: rgba(233, 213, 255, 0.85);
+  border-color: rgba(147, 51, 234, 0.3);
+  transform: translateX(-50%) rotate(-1deg);
+}
+
+.washi-tape.coral {
+  background-color: rgba(253, 164, 175, 0.85);
+  border-color: rgba(225, 29, 72, 0.3);
+  transform: translateX(-50%) rotate(1.5deg);
+}
+
+/* Crayon Marker Highlight */
+.crayon-highlight {
+  position: relative;
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: linear-gradient(104deg, rgba(254, 240, 138, 0.85) 0.9%, rgba(253, 224, 71, 0.6) 2.4%, rgba(254, 240, 138, 0.8) 90%);
+  transform: rotate(-0.8deg);
+}
+
+.dark .crayon-highlight {
+  background: linear-gradient(104deg, rgba(161, 98, 7, 0.85) 0.9%, rgba(202, 138, 4, 0.6) 2.4%, rgba(161, 98, 7, 0.8) 90%);
+}
+
+/* Cute Buttons with Squishy Click */
+.btn-cute {
+  border: 2px solid var(--line-color);
+  box-shadow: 2.5px 2.5px 0px var(--line-color);
+  border-radius: 255px 20px 225px 20px/20px 225px 20px 255px;
+  font-weight: 700;
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.btn-cute:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4px 4px 0px var(--line-color);
+}
+
+.btn-cute:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 1px 1px 0px var(--line-color);
+}
+
+/* Device Simulator Wrappers with Cute Handcrafted Bezel */
+.simulator-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 90px);
+  width: 100%;
+  padding: 1.5rem 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: auto;
+}
+
+/* Desktop View (16:9 / Normal) */
+.device-container.mode-auto,
+.device-container.mode-desktop {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Tablet Simulator Mode (3:4 aspect ~ 768px cute frame) */
+.device-container.mode-tablet {
+  width: 780px;
+  min-height: 980px;
+  border: 14px solid #fbcfe8;
+  outline: 3px solid #db2777;
+  border-radius: 38px;
+  background: var(--bg-paper);
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+.device-container.mode-tablet::before {
+  content: '🌸 Crayon Tablet';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: #be185d;
+  z-index: 50;
+}
+
+/* Mobile Simulator Mode (9:16 aspect cute pastel case) */
+.device-container.mode-mobile {
+  width: 410px;
+  min-height: 850px;
+  max-height: 890px;
+  border: 14px solid #fed7aa;
+  outline: 3px solid #ea580c;
+  border-radius: 46px;
+  background: var(--bg-paper);
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 30px;
+}
+
+/* Mobile Notch / Cute Ears */
+.device-container.mode-mobile::before {
+  content: '🐰 Cute Phone (9:16)';
+  position: sticky;
+  top: 0;
+  left: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 170px;
+  height: 26px;
+  background: #ea580c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  z-index: 60;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Boards Grid / Scroll */
+.boards-grid {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding: 1rem 0.5rem 2rem 0.5rem;
+  scroll-snap-type: x mandatory;
+}
+
+.boards-grid.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
+
+/* Board Column (Sổ tay con / Bảng vẽ) */
+.board-column {
+  min-width: 320px;
+  max-width: 370px;
+  flex: 0 0 340px;
+  scroll-snap-align: start;
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  background: var(--card-bg);
+  border: 2.5px solid var(--line-color);
+  box-shadow: var(--shadow-sketch);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Organic Hand-drawn Variations for Board Columns (7 distinct shapes & subtle tilts) */
+.board-column:nth-child(7n + 1) {
+  border-radius: 255px 18px 230px 16px/16px 235px 18px 250px;
+  transform: rotate(-0.5deg);
+}
+.board-column:nth-child(7n + 2) {
+  border-radius: 18px 245px 15px 235px/240px 16px 250px 18px;
+  transform: rotate(0.6deg);
+}
+.board-column:nth-child(7n + 3) {
+  border-radius: 240px 16px 255px 19px/18px 250px 15px 240px;
+  transform: rotate(-0.4deg);
+}
+.board-column:nth-child(7n + 4) {
+  border-radius: 230px 22px 240px 16px/20px 235px 17px 245px;
+  transform: rotate(0.5deg);
+}
+.board-column:nth-child(7n + 5) {
+  border-radius: 19px 250px 16px 230px/245px 17px 240px 19px;
+  transform: rotate(-0.6deg);
+}
+.board-column:nth-child(7n + 6) {
+  border-radius: 245px 17px 235px 20px/18px 240px 19px 250px;
+  transform: rotate(0.4deg);
+}
+.board-column:nth-child(7n + 7) {
+  border-radius: 235px 20px 250px 16px/17px 245px 16px 235px;
+  transform: rotate(-0.3deg);
+}
+
+.board-column:hover {
+  box-shadow: var(--shadow-sketch-lg);
+  transform: translateY(-4px) scale(1.008) rotate(0deg) !important;
+}
+
+.mode-mobile .board-column {
+  min-width: 100%;
+  max-width: 100%;
+  flex: 0 0 100%;
+  transform: none !important;
+}
+
+.boards-grid.layout-grid .board-column {
+  min-width: unset;
+  max-width: unset;
+  flex: unset;
+}
+
+/* Organic Hand-pasted Washi Tape Variations for Board Columns */
+.board-column:nth-child(7n + 1) .washi-tape {
+  left: 48%;
+  width: 104px;
+  transform: translateX(-50%) rotate(-2.4deg);
+}
+.board-column:nth-child(7n + 2) .washi-tape {
+  left: 52%;
+  width: 96px;
+  transform: translateX(-50%) rotate(1.8deg);
+}
+.board-column:nth-child(7n + 3) .washi-tape {
+  left: 49%;
+  width: 102px;
+  transform: translateX(-50%) rotate(-1.5deg);
+}
+.board-column:nth-child(7n + 4) .washi-tape {
+  left: 51%;
+  width: 94px;
+  transform: translateX(-50%) rotate(2.2deg);
+}
+.board-column:nth-child(7n + 5) .washi-tape {
+  left: 47%;
+  width: 106px;
+  transform: translateX(-50%) rotate(-0.8deg);
+}
+.board-column:nth-child(7n + 6) .washi-tape {
+  left: 53%;
+  width: 98px;
+  transform: translateX(-50%) rotate(1.6deg);
+}
+.board-column:nth-child(7n + 7) .washi-tape {
+  left: 50%;
+  width: 100px;
+  transform: translateX(-50%) rotate(-1.9deg);
+}
+
+/* Organic Crayon Stroke Bar on Board Columns */
+.board-crayon-bar {
+  width: 100%;
+  height: 7px;
+  border-radius: 255px 18px 225px 16px/16px 225px 18px 250px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+.board-column:nth-child(even) .board-crayon-bar {
+  border-radius: 18px 250px 15px 235px/240px 16px 245px 18px;
+  transform: rotate(0.4deg);
+}
+.board-column:nth-child(odd) .board-crayon-bar {
+  transform: rotate(-0.4deg);
+}
+
+/* Task Item Card (Tờ giấy ghi chú nhỏ / Sticky note) */
+.task-item {
+  border-radius: 180px 15px 200px 15px/15px 190px 15px 180px;
+  background-color: #fffdf5;
+  border: 2px solid var(--line-color);
+  box-shadow: 2px 2px 0px var(--line-color);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .task-item {
+  background-color: #27221f;
+}
+
+/* Organic sticky note variations */
+.task-item:nth-child(4n + 1) {
+  border-radius: 195px 12px 210px 14px/14px 180px 12px 195px;
+  transform: rotate(-0.45deg);
+  background-color: #fffef7;
+}
+.task-item:nth-child(4n + 2) {
+  border-radius: 15px 210px 13px 190px/190px 13px 205px 14px;
+  transform: rotate(0.4deg);
+  background-color: #fffdf8;
+}
+.task-item:nth-child(4n + 3) {
+  border-radius: 210px 16px 185px 14px/15px 195px 14px 180px;
+  transform: rotate(-0.3deg);
+  background-color: #fcfef8;
+}
+.task-item:nth-child(4n + 4) {
+  border-radius: 14px 190px 16px 205px/200px 15px 190px 13px;
+  transform: rotate(0.35deg);
+  background-color: #fdfaf6;
+}
+
+.dark .task-item:nth-child(4n + 1) { background-color: #26221f; }
+.dark .task-item:nth-child(4n + 2) { background-color: #272322; }
+.dark .task-item:nth-child(4n + 3) { background-color: #242420; }
+.dark .task-item:nth-child(4n + 4) { background-color: #282320; }
+
+.task-item:hover {
+  transform: translateY(-2px) scale(1.01) rotate(0deg) !important;
+  box-shadow: 4px 4px 0px var(--line-color);
+}
+
+/* Completed Task Stamp Effect */
+.task-item.completed {
+  opacity: 0.75;
+  background-color: #f5f5f4;
+}
+.dark .task-item.completed {
+  background-color: #1c1917;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  text-decoration-color: #f43f5e;
+  text-decoration-thickness: 2px;
+  color: var(--text-muted);
+}
+
+.stamp-completed {
+  display: none;
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  border: 2px dashed #f43f5e;
+  color: #f43f5e;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 10px;
+  transform: rotate(-10deg);
+  pointer-events: none;
+}
+
+.task-item.completed .stamp-completed {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  animation: stampPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes stampPop {
+  0% { transform: scale(1.8) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(-10deg); opacity: 1; }
+}
+
+/* Priority Indicators - Crayon border left */
+.priority-high {
+  border-left: 6px solid #f43f5e;
+}
+.priority-medium {
+  border-left: 6px solid #fbbf24;
+}
+.priority-low {
+  border-left: 6px solid #34d399;
+}
+
+/* Category Badge Cute */
+.badge-tag-cute {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--line-color);
+  box-shadow: 1px 1px 0px var(--line-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Animations */
+@keyframes cuteBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-cute-bounce {
+  animation: cuteBounce 2s infinite ease-in-out;
+}
+
+/* --- Poster 1-Image Export Styles --- */
+.active-ratio {
+  background-color: #fecdd3 !important;
+  color: #881337 !important;
+  border-color: #e11d48 !important;
+  box-shadow: 2px 2px 0px #e11d48 !important;
+}
+
+.poster-canvas {
+  box-sizing: border-box;
+  background-color: #fffdf7;
+  background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+  color: #292524;
+  border: 4px solid #292524;
+  border-radius: 28px;
+  box-shadow: 6px 6px 0px #292524;
+  padding: 1rem;
+  font-family: var(--font-cute);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Format (9:16 Lockscreen Wallpaper) ~ 720x1280px */
+.poster-canvas.format-mobile {
+  width: 720px;
+  height: 1280px;
+  max-height: 1280px;
+  padding: 1.25rem 1.25rem 1rem 1.25rem;
+}
+
+/* Dedicated Lockscreen Clock Area (Top 1/3 ~ 32% of 1280px) */
+.poster-clock-area {
+  height: 390px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Mockup Clock displayed only in modal preview */
+.lockscreen-clock-mockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 2.5rem;
+  border: 2px dashed rgba(168, 162, 158, 0.5);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+}
+.dark-theme .lockscreen-clock-mockup {
+  border-color: rgba(113, 113, 122, 0.6);
+  background: rgba(39, 39, 42, 0.45);
+}
+.mockup-time {
+  font-size: 4.25rem;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  color: #1c1917;
+  opacity: 0.7;
+}
+.dark-theme .mockup-time {
+  color: #f5f5f4;
+  opacity: 0.8;
+}
+.mockup-date {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 6px;
+  color: #44403c;
+  opacity: 0.7;
+}
+.dark-theme .mockup-date {
+  color: #d4d4d8;
+  opacity: 0.8;
+}
+.mockup-hint {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 10px;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #57534e;
+}
+.dark-theme .mockup-hint {
+  background: rgba(255, 255, 255, 0.12);
+  color: #a1a1aa;
+}
+
+/* Schedule Bottom Area (Bottom 2/3) */
+.poster-schedule-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Mobile Boards Grid in 2 columns */
+.poster-canvas.format-mobile .poster-boards-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  align-content: stretch;
+  overflow: hidden;
+}
+
+.poster-canvas.format-mobile .poster-day-card {
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.poster-canvas.format-mobile .poster-day-card:last-child:nth-child(odd) {
+  grid-column: span 2;
+}
+
+.poster-canvas.format-mobile .poster-day-header {
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.poster-canvas.format-mobile .poster-task-item {
+  padding: 0.18rem 0.35rem;
+  margin-bottom: 0.18rem;
+  font-size: 0.67rem;
+  gap: 0.25rem;
+}
+
+.poster-canvas.format-mobile .poster-task-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 175px;
+}
+
+.poster-canvas.format-mobile .poster-task-time {
+  font-size: 0.58rem;
+  padding: 0.5px 3px;
+}
+
+/* Desktop Format (16:9) ~ 1280x720px */
+.poster-canvas.format-desktop {
+  width: 1280px;
+  height: 720px;
+  max-height: 720px;
+  padding: 1rem 1.25rem;
+}
+.poster-canvas.format-desktop .poster-boards-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  align-content: stretch;
+  overflow: hidden;
+}
+.poster-canvas.format-desktop .poster-day-card {
+  padding: 0.45rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Poster Grid Format ~ 900x1140px */
+.poster-canvas.format-poster {
+  width: 900px;
+  height: 1140px;
+  max-height: 1140px;
+  padding: 1.25rem;
+}
+.poster-canvas.format-poster .poster-boards-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-content: stretch;
+  overflow: hidden;
+}
+.poster-canvas.format-poster .poster-day-card {
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Day Block inside Poster */
+.poster-day-card {
+  background: #ffffff;
+  border: 2px solid #292524;
+  border-radius: 16px;
+  box-shadow: 2px 2px 0px #292524;
+  padding: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.poster-canvas.dark-theme .poster-day-card {
+  background: #1c1917;
+  border-color: #52525b;
+  box-shadow: 2px 2px 0px #09090b;
+}
+
+/* Organic Hand-drawn Shapes & Angles for the 7 Days in Poster */
+.poster-day-card:nth-child(7n + 1) {
+  border-radius: 18px 12px 17px 13px/13px 17px 12px 18px !important;
+  transform: rotate(-0.35deg);
+}
+.poster-day-card:nth-child(7n + 2) {
+  border-radius: 13px 18px 12px 17px/17px 12px 18px 13px !important;
+  transform: rotate(0.4deg);
+}
+.poster-day-card:nth-child(7n + 3) {
+  border-radius: 17px 13px 18px 12px/12px 18px 13px 17px !important;
+  transform: rotate(-0.3deg);
+}
+.poster-day-card:nth-child(7n + 4) {
+  border-radius: 12px 17px 13px 18px/18px 13px 17px 12px !important;
+  transform: rotate(0.45deg);
+}
+.poster-day-card:nth-child(7n + 5) {
+  border-radius: 18px 12px 16px 17px/13px 18px 12px 16px !important;
+  transform: rotate(-0.4deg);
+}
+.poster-day-card:nth-child(7n + 6) {
+  border-radius: 13px 17px 18px 12px/17px 13px 12px 18px !important;
+  transform: rotate(0.35deg);
+}
+.poster-day-card:nth-child(7n + 7) {
+  border-radius: 16px 18px 13px 17px/14px 17px 18px 13px !important;
+  transform: rotate(-0.2deg);
+}
+
+/* Mini Washi Tape on Poster Day Cards */
+.poster-mini-tape {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 38px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0.85;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 5;
+}
+.poster-day-card:nth-child(even) .poster-mini-tape {
+  transform: translateX(-50%) rotate(2deg);
+}
+.poster-day-card:nth-child(3n) .poster-mini-tape {
+  transform: translateX(-50%) rotate(-2.5deg);
+}
+.poster-day-card:nth-child(4n) .poster-mini-tape {
+  transform: translateX(-50%) rotate(1.8deg);
+}
+
+/* Organic Crayon Stroke Bar inside Poster */
+.poster-crayon-bar {
+  width: 100%;
+  height: 4.5px;
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  margin-bottom: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+.poster-day-card:nth-child(even) .poster-crayon-bar {
+  border-radius: 15px 255px 15px 225px/225px 15px 255px 15px;
+  transform: rotate(0.4deg);
+}
+.poster-day-card:nth-child(odd) .poster-crayon-bar {
+  transform: rotate(-0.4deg);
+}
+
+.poster-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px dashed #e2e8f0;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.poster-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px 5px 8px 6px/6px 8px 5px 7px;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.poster-canvas.dark-theme .poster-task-item {
+  background: #27272a;
+  border-color: #3f3f46;
+}
+
+.poster-task-item:nth-child(even) {
+  border-radius: 5px 8px 6px 8px/8px 6px 7px 5px;
+}
+
+.poster-task-time {
+  background: #fef08a;
+  border: 1px solid #eab308;
+  border-radius: 4px;
+  padding: 1px 3.5px;
+  font-weight: 800;
+  font-size: 0.65rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.poster-footer {
+  text-align: center;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 2px dashed #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #78716c;
+}
+
+/* Dark Theme Poster Styles */
+.poster-canvas.dark-theme {
+  background-color: #121214 !important;
+  background-image: radial-gradient(#27272a 1.5px, transparent 1.5px) !important;
+  color: #f5f5f4 !important;
+  border-color: #f5f5f4 !important;
+  box-shadow: 6px 6px 0px #09090b !important;
+}
+
+.poster-canvas.dark-theme .poster-header-divider {
+  border-color: #3f3f46 !important;
+}
+
+.poster-canvas.dark-theme .poster-title {
+  color: #f5f5f4 !important;
+}
+
+.poster-canvas.dark-theme .poster-day-card {
+  background: #1e1e24 !important;
+  border: 2px solid #3f3f46 !important;
+  box-shadow: 3px 3px 0px #09090b !important;
+}
+
+.poster-canvas.dark-theme .poster-day-header {
+  border-bottom: 2px dashed #3f3f46 !important;
+  color: #f5f5f4 !important;
+}
+
+.poster-canvas.dark-theme .poster-day-header span {
+  color: #f5f5f4 !important;
+}
+
+.poster-canvas.dark-theme .poster-day-count {
+  background: #27272a !important;
+  border-color: #52525b !important;
+  color: #e4e4e7 !important;
+}
+
+.poster-canvas.dark-theme .poster-task-item {
+  background: #141416 !important;
+  border: 1px solid #27272a !important;
+  color: #f5f5f4 !important;
+}
+
+.poster-canvas.dark-theme .poster-task-title {
+  color: #f5f5f4 !important;
+}
+
+.poster-canvas.dark-theme .poster-task-time {
+  background: #854d0e !important;
+  border-color: #ca8a04 !important;
+  color: #fef08a !important;
+}
+
+.poster-canvas.dark-theme .poster-task-category {
+  color: #a1a1aa !important;
+}
+
+.poster-canvas.dark-theme .poster-footer {
+  border-top: 2px dashed #3f3f46 !important;
+  color: #a1a1aa !important;
+}
+
+.poster-canvas.dark-theme .poster-footer p {
+  color: #e4e4e7 !important;
+}
+
+.poster-canvas.dark-theme .poster-empty-text {
+  color: #71717a !important;
+}
+
+/* Cute Irasutoya Sticker Effects */
+.task-sticker-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.12));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.task-sticker-img:hover {
+  transform: scale(1.22) rotate(-6deg);
+}
+
+.poster-task-sticker {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+}
+
+.btn-source-tab.active-source {
+  transform: translate(-1px, -1px);
+}
+
+/* --- Drag & Drop Notes Across Boards --- */
+.task-item {
+  cursor: grab;
+}
+.task-item:active {
+  cursor: grabbing;
+}
+.task-item.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.97) rotate(1.5deg) !important;
+  border-style: dashed;
+}
+.board-column.drag-over {
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.28), var(--shadow-sketch-lg) !important;
+  transform: translateY(-4px) scale(1.01) rotate(0deg) !important;
+}
+.board-column.drag-over .task-drop-zone {
+  background-color: rgba(244, 114, 182, 0.08);
+  border-radius: 14px;
+}
+
+/* --- Live Now & Today Board Highlight --- */
+.board-column.is-today-board {
+  box-shadow: 4px 4px 0px #ec4899;
+}
+.task-item.is-live-now {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 2.5px rgba(244, 63, 94, 0.25), 3px 3px 0px #e11d48 !important;
+  background-color: #fff5f7 !important;
+}
+.dark .task-item.is-live-now {
+  background-color: #2d161f !important;
+}
+.live-now-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #be123c;
+  background: #ffe4e6;
+  border: 1.5px solid #f43f5e;
+  border-radius: 9999px;
+  padding: 1px 6px;
+  animation: cuteBounce 1.8s infinite ease-in-out;
+}
+.dark .live-now-badge {
+  background: #881337;
+  color: #fecdd3;
+}
+
+/* Print Friendly */
+@media print {
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+  }
+  .no-print,
+  header,
+  .washi-tape,
+  .stamp-completed,
+  button {
+    display: none !important;
+  }
+  .simulator-stage {
+    padding: 0 !important;
+  }
+  .device-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .boards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.25rem !important;
+    overflow: visible !important;
+  }
+  .board-column {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 2px solid #000 !important;
+  }
+}
+
+/* ================================================================
+   Sketchy Hand-Drawn SVG Icons & Animated Illustrations
+   Inspired by Ali0092/Sketchy — pure SVG, theme-aware currentColor
+   ================================================================ */
+.sketchy-svg,
+.sketchy-empty-svg {
+  overflow: visible;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+button:hover .sketchy-svg,
+.btn-cute:hover .sketchy-svg,
+.group:hover .sketchy-svg {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.sketchy-hand-part {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.sketchy-clock-tick .sketchy-hand-part {
+  transform-origin: 12px 12px;
+  animation: sketchyClockTick 8s steps(12, end) infinite;
+}
+
+.sketchy-float-bob {
+  animation: sketchyFloatBob 2.8s ease-in-out infinite;
+}
+
+.sketchy-bunny-bob {
+  animation: sketchyBunnyBob 3.2s ease-in-out infinite;
+}
+
+.sketchy-twinkle {
+  transform-origin: center;
+  animation: sketchyTwinkle 2.4s ease-in-out infinite;
+}
+
+.sketchy-bell-ring {
+  transform-origin: 12px 4px;
+  animation: sketchyBellSwing 4.5s ease-in-out infinite;
+}
+
+.sketchy-flame-flicker {
+  transform-origin: 12px 19px;
+  animation: sketchyFlameFlicker 1.9s ease-in-out infinite;
+}
+
+.sketchy-pulse-soft {
+  transform-origin: center;
+  animation: sketchyPulseSoft 2.6s ease-in-out infinite;
+}
+
+button:hover .sketchy-hover-wiggle,
+.btn-cute:hover .sketchy-hover-wiggle,
+.group:hover .sketchy-hover-wiggle {
+  animation: sketchyWiggle 0.45s ease-in-out;
+}
+
+.sketchy-hover-pop {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sketchyClockTick {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes sketchyFloatBob {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-2.4px); }
+}
+
+@keyframes sketchyBunnyBob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%      { transform: translateY(-2.2px) rotate(1.2deg); }
+}
+
+@keyframes sketchyTwinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.95; }
+  50%      { transform: scale(1.1) rotate(5deg); opacity: 1; }
+}
+
+@keyframes sketchyBellSwing {
+  0%, 72%, 100% { transform: rotate(0deg); }
+  76%           { transform: rotate(9deg); }
+  80%           { transform: rotate(-8deg); }
+  84%           { transform: rotate(6deg); }
+  88%           { transform: rotate(-4deg); }
+}
+
+@keyframes sketchyFlameFlicker {
+  0%, 100% { transform: scaleY(1) skewX(0deg); }
+  35%      { transform: scaleY(1.06) skewX(-2deg); }
+  70%      { transform: scaleY(0.96) skewX(2deg); }
+}
+
+@keyframes sketchyPulseSoft {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.07); }
+}
+
+@keyframes sketchyWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-9deg); }
+  75%      { transform: rotate(9deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sketchy-clock-tick .sketchy-hand-part,
+  .sketchy-float-bob,
+  .sketchy-bunny-bob,
+  .sketchy-twinkle,
+  .sketchy-bell-ring,
+  .sketchy-flame-flicker,
+  .sketchy-pulse-soft {
+    animation: none !important;
+  }
+}
+
+/* ================================================================
+   Draggable Windows / Panels & Horizontal Drag-to-Scroll
+   ================================================================ */
+.drag-window-handle {
+  touch-action: none;
+  cursor: grab;
+}
+.drag-window-handle:active {
+  cursor: grabbing;
+}
+
+.sketch-box.is-window-dragging {
+  box-shadow: 8px 8px 0px var(--line-color) !important;
+  transition: none !important;
+  z-index: 65 !important;
+}
+
+.drag-scroll-x {
+  cursor: grab;
+}
+.drag-scroll-x.dragging-scroll,
+.drag-scroll-x.dragging-scroll * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

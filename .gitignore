@@ -1,0 +1,21 @@
+# Runtime user & schedule data (do not commit user accounts/sessions)
+data/
+schedule-data.json
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# OS & Editor artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# Local IDE / MCP configs
+.agents/
+mcp_config.json
+.vscode/
+.idea/
+node_modules/

@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Thời Gian Biểu Tanas</title>
+  <link rel="icon" type="image/png" href="./logo.png">
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            crayon: {
+              pink: '#fbcfe8',
+              yellow: '#fef08a',
+              mint: '#bbf7d0',
+              blue: '#bae6fd',
+              purple: '#e9d5ff',
+              peach: '#fed7aa',
+              coral: '#fda4af',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- html2canvas for 1-image export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="transition-colors duration-200">
+
+  <!-- Top Navigation Header (Sketchy Doodle Bar) -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b-2 border-stone-800 dark:border-stone-200 px-4 py-3 shadow-[0_3px_0px_#292524] dark:shadow-[0_3px_0px_#f5f5f4]">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-200 via-amber-100 to-sky-200 border-2 border-stone-800 dark:border-stone-100 flex items-center justify-center shadow-[2px_2px_0px_#292524] overflow-hidden p-0.5 flex-shrink-0">
+          <img src="./logo.png" alt="Logo Thời Gian Biểu" class="w-full h-full object-contain">
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-black tracking-tight text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
+              Thời Gian Biểu Tanas
+            </h1>
+          </div>
+          <p class="text-xs text-stone-500 dark:text-stone-400 font-medium">Sổ tay đa tỷ lệ cho điện thoại &amp; máy tính</p>
+        </div>
+      </div>
+
+      <!-- Center: Screen Ratio Switcher (Mô phỏng tỷ lệ màn hình) -->
+      <div class="flex items-center bg-stone-100 dark:bg-stone-800 p-1.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 shadow-[2px_2px_0px_#292524] text-xs font-bold gap-1">
+        <button id="btn-mode-auto" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Tự động theo kích thước cửa sổ">
+          <span data-sketchy="auto" data-size="15"></span>
+          <span class="hidden sm:inline">Tự Động</span>
+        </button>
+        <button id="btn-mode-desktop" class="mode-btn btn-cute px-3 py-1 bg-amber-200 dark:bg-amber-900 text-stone-900 dark:text-white" title="Màn hình Máy tính 16:9">
+          <span data-sketchy="monitor" data-size="15" data-accent="#bae6fd"></span>
+          <span>Máy Tính (16:9)</span>
+        </button>
+        <button id="btn-mode-tablet" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Máy tính bảng 3:4">
+          <span data-sketchy="tablet" data-size="15" data-accent="#e9d5ff"></span>
+          <span>Tablet</span>
+        </button>
+        <button id="btn-mode-mobile" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Điện thoại 9:16">
+          <span data-sketchy="smartphone" data-size="15" data-accent="#fbcfe8"></span>
+          <span>Điện Thoại (9:16)</span>
+        </button>
+      </div>
+
+      <!-- Right Action Controls -->
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <!-- New Task Button -->
+        <button id="btn-open-task-modal" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 text-xs sm:text-sm px-3 py-1.5">
+          <span data-sketchy="pencil" data-size="16" data-accent="#fef08a"></span>
+          <span>Thêm Việc</span>
+        </button>
+
+        <!-- New Board Button -->
+        <button id="btn-open-board-modal" class="btn-cute bg-sky-200 hover:bg-sky-300 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5" title="Thêm bảng mới">
+          <span data-sketchy="clipboard" data-size="16" data-accent="#ffffff"></span>
+          <span class="hidden lg:inline">Thêm Bảng</span>
+        </button>
+
+        <!-- Export All Days As 1 Image Button -->
+        <button id="btn-open-image-modal" class="btn-cute bg-rose-300 hover:bg-rose-400 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Xuất tất cả ngày trong tuần thành 1 bức ảnh">
+          <span data-sketchy="camera" data-size="16" data-accent="#ffffff"></span>
+          <span class="hidden sm:inline">Xuất Ảnh</span>
+        </button>
+
+        <!-- Focus Music & YouTube Widget Toggle -->
+        <button id="btn-toggle-music-widget" class="btn-cute bg-emerald-200 hover:bg-emerald-300 text-stone-900 text-xs px-2.5 py-1.5" title="Góc Nhạc &amp; YouTube">
+          <span data-sketchy="headphones" data-size="16" data-accent="#fef08a"></span>
+          <span class="hidden xl:inline">Nhạc</span>
+        </button>
+
+        <!-- Pomodoro Timer Toggle -->
+        <button id="btn-toggle-pomo-widget" class="btn-cute bg-amber-200 hover:bg-amber-300 text-stone-900 text-xs px-2.5 py-1.5" title="Đồng hồ tập trung Pomodoro">
+          <span data-sketchy="timer" data-size="16" data-accent="#fda4af"></span>
+          <span id="header-pomo-label" class="font-black">25:00</span>
+        </button>
+
+        <!-- AI Assistant Drawer Toggle -->
+        <button id="btn-toggle-ai-drawer" class="btn-cute bg-indigo-300 hover:bg-indigo-400 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Trợ Lý AI (Ghi chú, mở nhạc, tư vấn)">
+          <span data-sketchy="bot" data-size="16" data-accent="#fef08a"></span>
+          <span class="hidden sm:inline font-black">Trợ Lý AI</span>
+        </button>
+
+        <!-- Browser Notification Toggle -->
+        <button id="btn-toggle-notifications" class="btn-cute bg-stone-100 hover:bg-yellow-100 text-stone-800 p-2 relative" title="Bật/Tắt thông báo nhắc lịch">
+          <span id="icon-notif-bell" data-sketchy="bell-off" data-size="16"></span>
+        </button>
+
+        <!-- Template Selector -->
+        <button id="btn-open-templates-modal" class="btn-cute bg-yellow-200 hover:bg-yellow-300 text-stone-900 p-2" title="Mẫu thời gian biểu có sẵn">
+          <span data-sketchy="layers" data-size="16" data-accent="#ffffff"></span>
+        </button>
+
+        <!-- Icons & Sticker Library Button -->
+        <button id="btn-open-icons-modal" class="btn-cute bg-teal-200 hover:bg-teal-300 text-stone-900 p-2" title="Kho Sticker &amp; Icon Sketchy">
+          <span data-sketchy="sparkles" data-size="16" data-accent="#fef08a"></span>
+        </button>
+
+        <!-- Print/PDF Button -->
+        <button id="btn-print" class="btn-cute bg-green-200 hover:bg-green-300 text-stone-900 p-2" title="In hoặc Xuất PDF sổ tay">
+          <span data-sketchy="printer" data-size="16" data-accent="#ffffff"></span>
+        </button>
+
+        <!-- Backup/Restore JSON -->
+        <button id="btn-backup" class="btn-cute bg-purple-200 hover:bg-purple-300 text-stone-900 p-2" title="Sao lưu &amp; Khôi phục">
+          <span data-sketchy="save" data-size="16" data-accent="#ffffff"></span>
+        </button>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button id="btn-toggle-theme" class="btn-cute bg-orange-200 hover:bg-orange-300 text-stone-900 p-2" title="Đổi màu ngày / đêm">
+          <span id="icon-theme-emoji" data-sketchy="moon" data-size="16" data-accent="#fef08a"></span>
+        </button>
+
+        <!-- Account Login / Profile Button -->
+        <button id="btn-open-auth" class="btn-cute bg-rose-200 hover:bg-rose-300 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Tài khoản &amp; Đồng bộ máy chủ">
+          <span id="icon-auth-status" data-sketchy="user" data-size="16" data-accent="#fecdd3"></span>
+          <span id="header-auth-label" class="hidden sm:inline font-black">Đăng nhập</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Filter & Sticky Progress Bar -->
+  <section class="max-w-7xl mx-auto px-4 pt-4 pb-2">
+    <div class="sketch-box bg-white dark:bg-stone-900 p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+      
+      <!-- Washi tape on progress banner -->
+      <div class="washi-tape mint"></div>
+
+      <!-- Progress and Metrics -->
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="relative w-14 h-14 flex-shrink-0">
+          <svg class="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+            <path class="text-stone-200 dark:text-stone-800" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path id="stat-progress-ring" class="text-pink-500 transition-all duration-500 ease-out" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center text-xs font-black" id="stat-percent-text">0%</div>
+        </div>
+        <div>
+          <div class="text-sm font-bold flex flex-wrap items-center gap-2">
+            <span>Tiến độ hoàn thành</span>
+            <span id="stat-summary-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-yellow-200 text-stone-800 border border-yellow-400 font-bold">0/0 việc</span>
+            <span id="stat-streak-badge" class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-400 font-bold inline-flex items-center gap-1" title="Chuỗi ngày có hoàn thành việc">
+              <span data-sketchy="flame" data-size="13" data-accent="#fb923c"></span>
+              <span id="stat-streak-text">0 ngày</span>
+            </span>
+          </div>
+          <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-medium" id="stat-status-message">Kế hoạch theo dõi công việc trong tuần</p>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+        <!-- Search Input -->
+        <div class="relative flex-1 sm:w-60">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-300" data-sketchy="search" data-size="15"></span>
+          <input type="text" id="input-search" placeholder="Tìm việc cần làm..." class="w-full pl-9 pr-3 py-1.5 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-400">
+        </div>
+
+        <!-- Filter Status -->
+        <select id="select-filter-status" class="py-1.5 px-3 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 text-stone-800 dark:text-stone-200">
+          <option value="all">Tất cả việc</option>
+          <option value="pending">Chưa xong</option>
+          <option value="completed">Đã xong</option>
+        </select>
+
+        <!-- View layout toggles -->
+        <div class="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl border-2 border-stone-800 dark:border-stone-300">
+          <button id="btn-layout-columns" class="p-1 rounded-lg bg-pink-200 text-stone-900 border border-stone-800 shadow-sm" title="Xem dạng bảng trượt">
+            <span data-sketchy="columns" data-size="16"></span>
+          </button>
+          <button id="btn-layout-grid" class="p-1 rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-white" title="Xem dạng lưới">
+            <span data-sketchy="grid" data-size="16"></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Data Sync Banner (Chuyển dữ liệu mượt giữa file:// và bản .bat localhost) -->
+  <section id="data-migration-banner" class="hidden max-w-7xl mx-auto px-4 pb-1 no-print">
+    <div class="px-4 py-2.5 rounded-2xl border-2 border-stone-800 dark:border-stone-200 bg-amber-100/95 dark:bg-amber-950/70 shadow-[2px_2px_0px_#292524] flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2 min-w-0">
+        <span data-sketchy="save" data-size="16" data-accent="#fef08a"></span>
+        <span id="migration-banner-text" class="font-bold text-stone-800 dark:text-stone-100"></span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5 flex-shrink-0">
+        <button type="button" id="btn-migration-primary" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 px-3 py-1 text-xs font-black"></button>
+        <button type="button" id="btn-migration-secondary" class="btn-cute bg-white hover:bg-stone-100 text-stone-900 px-3 py-1 text-xs font-bold"></button>
+        <button type="button" id="btn-migration-dismiss" class="px-2 py-1 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-amber-200 dark:hover:bg-stone-800 font-bold" title="Ẩn thông báo này">✕</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mobile Quick Board Tabs (Kéo trượt qua lại mượt mà) -->
+  <div id="mobile-tabs-container" class="hidden drag-scroll-x px-4 py-2 overflow-x-auto flex gap-2 no-scrollbar border-b-2 border-stone-800 dark:border-stone-300 bg-white/70 dark:bg-stone-900/70 sticky top-[68px] z-30 backdrop-blur">
+    <!-- Rendered dynamically with cute chips -->
+  </div>
+
+  <!-- Stage Area (Device Simulator Container) -->
+  <main class="simulator-stage">
+    <div id="device-wrapper" class="device-container mode-desktop">
+      
+      <!-- Device header indicator (for simulator mode) -->
+      <div id="simulator-info" class="hidden px-4 py-2 bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-200 text-xs flex justify-between items-center border-b-2 border-stone-800 font-bold">
+        <span class="flex items-center gap-1.5">
+          <span data-sketchy="rabbit" data-size="16"></span>
+          Mô phỏng tỷ lệ: <span id="current-mode-label" class="underline decoration-pink-500 font-black">Máy tính</span>
+        </span>
+        <button id="btn-reset-zoom" class="hover:underline text-[11px] font-bold">Về máy tính (16:9) →</button>
+      </div>
+
+      <!-- Boards Container (Kéo trượt ngang qua lại thoải mái) -->
+      <div id="boards-container" class="boards-grid drag-scroll-x p-4 min-h-[550px]">
+        <!-- Dynamic boards injected here -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal: Thêm / Chỉnh Sửa Việc Cần Làm -->
+  <div id="modal-task" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-lg max-h-[92vh] flex flex-col p-0 relative">
+      <div class="washi-tape pink"></div>
+      
+      <div class="drag-window-handle px-6 py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-pink-50 dark:bg-pink-950/40 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <div class="flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="pencil" data-size="18" data-accent="#fef08a"></span>
+          <h3 id="modal-task-title" class="font-black text-base text-stone-800 dark:text-stone-100">Viết Việc Cần Làm Mới</h3>
+        </div>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+
+      <form id="form-task" class="p-5 space-y-3.5 overflow-y-auto flex-1">
+        <input type="hidden" id="task-id">
+
+        <!-- Board Selection -->
+        <div>
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Chọn Bảng / Thứ *</label>
+          <select id="task-board-id" required class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+            <!-- Dynamic board options -->
+          </select>
+        </div>
+
+        <!-- Task Title -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200">Việc cần làm (Tên công việc / Môn học) *</label>
+            <button type="button" id="btn-quick-open-icons" class="text-[11px] text-teal-600 dark:text-teal-400 font-bold hover:underline inline-flex items-center gap-1">
+              <span data-sketchy="sparkles" data-size="13" data-accent="#fef08a"></span>
+              <span>Kho Sticker &amp; Icon</span>
+            </button>
+          </div>
+          <input type="text" id="task-title" required placeholder="Ví dụ: Ôn tập Toán, Đi cà phê với bạn, Vẽ tranh..." class="w-full px-3.5 py-2.5 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+          
+          <!-- Quick Sticker Palette -->
+          <div class="flex flex-wrap items-center gap-1.5 mt-2">
+            <span class="text-[10px] text-stone-400 font-bold">Sticker nhanh:</span>
+            <div class="flex flex-wrap gap-1.5" id="quick-task-stickers">
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj9pKYM8bAN7s9UwKcoy25wh-Meq6dmvRHRXwrc9F_pKZbyV-qUS6lGrcBkEx1MGfI8fjZte6O0mN2SCNajBWty2NeGdm1KF41ncXDkZjGsNJ5-5OUahQwwjr0Cj1W0oP0ElhbnY-hzSMg/s400/animal_study_usagi.png" data-name="Thỏ Học Bài" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Thỏ Học Bài">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj9pKYM8bAN7s9UwKcoy25wh-Meq6dmvRHRXwrc9F_pKZbyV-qUS6lGrcBkEx1MGfI8fjZte6O0mN2SCNajBWty2NeGdm1KF41ncXDkZjGsNJ5-5OUahQwwjr0Cj1W0oP0ElhbnY-hzSMg/s400/animal_study_usagi.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj72XC7BDxBcvN8ukOQFdnubPQxgEdxg7BYJAcHpIIXKQJahBhuJFzY3-gWOEWr7RLJsqHifHNKKyDMT6tFw1Jw1TLcJ8a4ZGXCwbAqHBHQq_91QLGT-DAgZtabix0cztyJGJngTSQiLlJD/s400/cat_study.png" data-name="Mèo Ôn Thi" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Mèo Ôn Thi">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj72XC7BDxBcvN8ukOQFdnubPQxgEdxg7BYJAcHpIIXKQJahBhuJFzY3-gWOEWr7RLJsqHifHNKKyDMT6tFw1Jw1TLcJ8a4ZGXCwbAqHBHQq_91QLGT-DAgZtabix0cztyJGJngTSQiLlJD/s400/cat_study.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicH8KK_hg1llbPHwlkZx9RzBvnAUiPoF7D7rfa8-tX3Z40vhNWpOs2vdbDSuIx7PHB7OCgXbBbfUN_8fqb5-nU34SXi7JD77ehPn-CHXx6WEsg7f6wz91TlXFfse9Slk4DjZJWKFsOzjF5/s400/computer01_smile.png" data-name="Laptop Cười" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Laptop Cười">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicH8KK_hg1llbPHwlkZx9RzBvnAUiPoF7D7rfa8-tX3Z40vhNWpOs2vdbDSuIx7PHB7OCgXbBbfUN_8fqb5-nU34SXi7JD77ehPn-CHXx6WEsg7f6wz91TlXFfse9Slk4DjZJWKFsOzjF5/s400/computer01_smile.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWDyVXzkfaHdxf6NeqW9JslA_vAcV0Gbj8HHlyZHfE2ivuA-Avf53lJMOiCzi6f8ieBrthqBIluXZTHg7yKOLgn7Op_GmHaZSCh8sLDiTdrfQeLO1adBz304VZT8JZP7qRos9Y_2E-MeeO/s400/computer_sagyouin_man.png" data-name="Lập Trình &amp; Đồ Họa" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Lập Trình &amp; Đồ Họa">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWDyVXzkfaHdxf6NeqW9JslA_vAcV0Gbj8HHlyZHfE2ivuA-Avf53lJMOiCzi6f8ieBrthqBIluXZTHg7yKOLgn7Op_GmHaZSCh8sLDiTdrfQeLO1adBz304VZT8JZP7qRos9Y_2E-MeeO/s400/computer_sagyouin_man.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNYb8_90UwsnC-IkWACgv4Er302m9Fp9_1iKEyXMTEmq5fpftwJTg4gmCwFO4ASkj4LoEAor7vwnD-kJzmkq8dHaI3ktvWrU9d59Blf_F37ehxPvFKddW6cKG257ClpwhAhWC0fvR2rTIa/s400/food_obentou.png" data-name="Cơm Bento" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Cơm Bento">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNYb8_90UwsnC-IkWACgv4Er302m9Fp9_1iKEyXMTEmq5fpftwJTg4gmCwFO4ASkj4LoEAor7vwnD-kJzmkq8dHaI3ktvWrU9d59Blf_F37ehxPvFKddW6cKG257ClpwhAhWC0fvR2rTIa/s400/food_obentou.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7VbK6ANRPdqvJ9p61g92fVTzuhKQ8kMRpAvPBI-TdwT9FLClDyA5b_8vhnlNXeCdUo_MJwob3MZp8lPXzA3vPS3Rl7CiIy2RMOhmGx-Urk64dmLqsn9ZnU5zcghvOz-iZPHQe_NxfWgyr/s400/figure_cafe.png" data-name="Cà Phê Chill" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Cà Phê Chill">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7VbK6ANRPdqvJ9p61g92fVTzuhKQ8kMRpAvPBI-TdwT9FLClDyA5b_8vhnlNXeCdUo_MJwob3MZp8lPXzA3vPS3Rl7CiIy2RMOhmGx-Urk64dmLqsn9ZnU5zcghvOz-iZPHQe_NxfWgyr/s400/figure_cafe.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg_PL8lWSThinrawZuWcdV2ilNosCpbdNIzLGRHBzoE3ZXjTgy0fZp7FdhmXbA-2LIodXekar4d_qiwEJC88eXMy9FO5peZZwDuorLCXdBkMqIjI0kFjzej2uXMhDmDe2YPzjdjMbKM6Rk/s400/taiiku_white_girl.png" data-name="Thể Dục" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Thể Dục">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg_PL8lWSThinrawZuWcdV2ilNosCpbdNIzLGRHBzoE3ZXjTgy0fZp7FdhmXbA-2LIodXekar4d_qiwEJC88eXMy9FO5peZZwDuorLCXdBkMqIjI0kFjzej2uXMhDmDe2YPzjdjMbKM6Rk/s400/taiiku_white_girl.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+              <button type="button" data-sticker="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7n3eo5afHIEY5lJBrgrG2KShtlYRLu0oJRs4v9QAvm5-h_lXAOFrlf1_hhQXC0C1i190rjqE0cRhp_FE9EszZwxg8DFQR5znd8Xw44G09z1w6P8_CD05IiP3odR5nixYgeBnMa3vrMRw/s400/character_mezamashidokei.png" data-name="Báo Thức" class="btn-quick-sticker w-8 h-8 rounded-xl bg-pink-50 dark:bg-stone-800 hover:bg-pink-100 dark:hover:bg-pink-950 border-2 border-stone-800 dark:border-stone-600 p-0.5 flex items-center justify-center transition hover:scale-110 shadow-sm" title="Báo Thức">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7n3eo5afHIEY5lJBrgrG2KShtlYRLu0oJRs4v9QAvm5-h_lXAOFrlf1_hhQXC0C1i190rjqE0cRhp_FE9EszZwxg8DFQR5znd8Xw44G09z1w6P8_CD05IiP3odR5nixYgeBnMa3vrMRw/s400/character_mezamashidokei.png" class="w-6 h-6 object-contain pointer-events-none">
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected Sticker / Sketchy Icon Badge & Picker Button -->
+          <input type="hidden" id="task-icon-url" value="">
+          <input type="hidden" id="task-sketchy-key" value="">
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            <button type="button" id="btn-pick-task-sticker" class="btn-cute bg-pink-200 hover:bg-pink-300 text-stone-900 text-xs px-2.5 py-1 font-bold flex items-center gap-1 shadow-sm">
+              <span data-sketchy="brush" data-size="13" data-accent="#fef08a"></span>
+              <span>Kho sticker &amp; icon</span>
+            </button>
+            <div id="task-selected-icon-badge" class="hidden items-center gap-1.5 px-2.5 py-1 bg-pink-100 dark:bg-pink-950/60 border border-pink-400 dark:border-pink-700 rounded-xl">
+              <img id="task-selected-icon-img" src="" class="w-5 h-5 object-contain">
+              <span id="task-selected-sketchy-preview" class="hidden w-5 h-5 items-center justify-center text-stone-800 dark:text-stone-100"></span>
+              <span id="task-selected-icon-name" class="text-xs font-bold text-pink-700 dark:text-pink-300">Sticker</span>
+              <button type="button" id="btn-remove-task-icon" class="text-xs text-stone-400 hover:text-rose-500 font-bold ml-1" title="Bỏ sticker">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time Range (Thời gian) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="clock" data-size="13"></span> Giờ Bắt Đầu *</label>
+            <input type="time" id="task-start-time" required class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="clock" data-size="13"></span> Giờ Kết Thúc *</label>
+            <input type="time" id="task-end-time" required class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Category & Priority -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="tag" data-size="13"></span> Phân loại / Thẻ</label>
+            <select id="task-category" class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+              <option value="Học bài">Học bài</option>
+              <option value="Công việc">Công việc</option>
+              <option value="Thể thao">Thể thao</option>
+              <option value="Sáng tạo & Chill">Sáng tạo & Chill</option>
+              <option value="Ăn uống & Nghỉ ngơi">Ăn uống & Nghỉ ngơi</option>
+              <option value="Mục tiêu quan trọng">Mục tiêu quan trọng</option>
+              <option value="Việc cá nhân">Việc cá nhân</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="star" data-size="13"></span> Mức Độ Ưu Tiên</label>
+            <select id="task-priority" class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+              <option value="high">Rất quan trọng (Gấp)</option>
+              <option value="medium" selected>Vừa phải</option>
+              <option value="low">Thong thả thôi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="note" data-size="13"></span> Ghi chú (Tùy chọn)</label>
+          <textarea id="task-notes" rows="2" placeholder="Ghi chú thêm tài liệu, địa điểm, cần chuẩn bị..." class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-medium focus:ring-2 focus:ring-pink-400 focus:outline-none resize-none"></textarea>
+        </div>
+
+        <!-- Attached YouTube URL & Browser Reminder -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="youtube" data-size="13"></span> Link YouTube đính kèm</label>
+            <input type="url" id="task-youtube-url" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-xs font-semibold focus:ring-2 focus:ring-rose-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="bell" data-size="13"></span> Nhắc trước giờ</label>
+            <select id="task-remind-minutes" class="w-full px-3 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-xs font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+              <option value="0">Không nhắc</option>
+              <option value="1">Đúng giờ</option>
+              <option value="5">Trước 5 phút</option>
+              <option value="10">Trước 10 phút</option>
+              <option value="15">Trước 15 phút</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Subtasks Checklist Editor -->
+        <div class="p-3 rounded-2xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-800/40 space-y-2">
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1"><span data-sketchy="checklist" data-size="14"></span> Checklist việc nhỏ bên trong</label>
+          <div class="flex gap-2">
+            <input type="text" id="input-new-subtask" placeholder="Thêm bước nhỏ (VD: Xem video phần 1)..." class="flex-1 px-3 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 text-xs font-semibold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+            <button type="button" id="btn-add-subtask" class="btn-cute bg-sky-200 hover:bg-sky-300 text-stone-900 px-3 py-1 text-xs">+ Thêm</button>
+          </div>
+          <div id="task-subtasks-list" class="space-y-1.5 max-h-28 overflow-y-auto"></div>
+        </div>
+
+        <!-- Repeat / Habit Section -->
+        <div id="task-repeat-section" class="p-3 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
+              <span data-sketchy="repeat" data-size="14"></span>
+              <span>Nhân bản lặp lại sang bảng khác</span>
+            </label>
+            <button type="button" id="btn-select-all-repeat" class="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:underline">Chọn cả tuần</button>
+          </div>
+          <div id="task-repeat-boards" class="flex flex-wrap gap-1.5">
+            <!-- Populated dynamically with board chips -->
+          </div>
+          <label class="flex items-center gap-2 text-xs font-bold text-stone-600 dark:text-stone-300 cursor-pointer pt-1">
+            <input type="checkbox" id="task-is-habit" class="w-4 h-4 rounded border-2 border-stone-800 text-amber-500">
+            <span>Đánh dấu đây là thói quen hàng ngày / hàng tuần (Habit)</span>
+          </label>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t-2 border-stone-800 dark:border-stone-200">
+          <button type="button" class="btn-close-modal btn-cute bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-1.5 text-xs">Hủy bỏ</button>
+          <button type="submit" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 px-5 py-2 text-xs font-black">Lưu công việc</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Modal: Thêm / Sửa Bảng -->
+  <div id="modal-board" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+      <div class="washi-tape yellow"></div>
+      
+      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-yellow-50 dark:bg-yellow-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 id="modal-board-title" class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="clipboard" data-size="18" data-accent="#fef08a"></span>
+          <span>Thêm Bảng Kế Hoạch</span>
+        </h3>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+
+      <form id="form-board" class="p-6 space-y-4">
+        <input type="hidden" id="board-id">
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Tên Bảng (Ví dụ: Thứ Hai, Buổi Sáng, Đồ Án...) *</label>
+          <input type="text" id="board-name" required placeholder="Nhập tên bảng..." class="w-full px-3.5 py-2.5 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-yellow-400 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Màu Bút Chì Trang Trí</label>
+          <div class="flex items-center gap-3">
+            <input type="color" id="board-color" value="#f472b6" class="w-10 h-10 rounded-xl cursor-pointer border-2 border-stone-800 bg-transparent">
+            <div class="flex flex-wrap gap-2" id="preset-colors">
+              <button type="button" data-color="#f472b6" class="w-7 h-7 rounded-full bg-pink-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+              <button type="button" data-color="#38bdf8" class="w-7 h-7 rounded-full bg-sky-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+              <button type="button" data-color="#4ade80" class="w-7 h-7 rounded-full bg-green-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+              <button type="button" data-color="#fb923c" class="w-7 h-7 rounded-full bg-orange-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+              <button type="button" data-color="#c084fc" class="w-7 h-7 rounded-full bg-purple-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+              <button type="button" data-color="#facc15" class="w-7 h-7 rounded-full bg-yellow-400 border-2 border-stone-800 hover:scale-110 transition"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t-2 border-stone-800 dark:border-stone-200">
+          <button type="button" class="btn-close-modal btn-cute bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-1.5 text-xs">Hủy bỏ</button>
+          <button type="submit" class="btn-cute bg-yellow-300 hover:bg-yellow-400 text-stone-900 px-5 py-2 text-xs font-black">Lưu bảng</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Modal: Chọn Mẫu Sẵn (Templates Modal) -->
+  <div id="modal-templates" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+      <div class="washi-tape blue"></div>
+      
+      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-sky-50 dark:bg-sky-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="layers" data-size="18" data-accent="#bae6fd"></span>
+          <span>Chọn Mẫu Thời Gian Biểu</span>
+        </h3>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+      <div class="p-6 space-y-3">
+        <p class="text-xs text-stone-500 font-medium mb-3">Chọn mẫu lịch phù hợp (lưu ý: sẽ áp dụng bộ bảng mới):</p>
+        
+        <button class="btn-apply-template w-full text-left p-3.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 hover:bg-pink-100 dark:hover:bg-pink-950/40 transition flex items-start gap-3 shadow-[2px_2px_0px_#292524]" data-template="weekly">
+          <span data-sketchy="calendar" data-size="24" data-accent="#fbcfe8"></span>
+          <div>
+            <h4 class="font-black text-sm">Theo 7 Ngày Trong Tuần</h4>
+            <p class="text-xs text-stone-500 mt-0.5">Thứ 2 đến Chủ Nhật, thời khóa biểu học tập &amp; làm việc sinh động.</p>
+          </div>
+        </button>
+
+        <button class="btn-apply-template w-full text-left p-3.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 hover:bg-yellow-100 dark:hover:bg-yellow-950/40 transition flex items-start gap-3 shadow-[2px_2px_0px_#292524]" data-template="dayparts">
+          <span data-sketchy="sun" data-size="24" data-accent="#fef08a"></span>
+          <div>
+            <h4 class="font-black text-sm">Theo Buổi Trong Ngày</h4>
+            <p class="text-xs text-stone-500 mt-0.5">Sáng khởi đầu, Trưa nghỉ ngơi, Chiều tập trung, Tối thư giãn.</p>
+          </div>
+        </button>
+
+        <button class="btn-apply-template w-full text-left p-3.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 hover:bg-green-100 dark:hover:bg-green-950/40 transition flex items-start gap-3 shadow-[2px_2px_0px_#292524]" data-template="categories">
+          <span data-sketchy="star" data-size="24" data-accent="#bbf7d0"></span>
+          <div>
+            <h4 class="font-black text-sm">Theo Nhóm Sở Thích &amp; Mục Tiêu</h4>
+            <p class="text-xs text-stone-500 mt-0.5">Học tập, Công việc, Thể thao, Sáng tạo &amp; Thư giãn.</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Sao Lưu / Phục Hồi Dữ Liệu -->
+  <div id="modal-backup" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+      <div class="washi-tape purple"></div>
+      
+      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-purple-50 dark:bg-purple-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="save" data-size="18" data-accent="#e9d5ff"></span>
+          <span>Sao Lưu &amp; Nhập Sổ Tay</span>
+        </h3>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-2">Tải file lưu về máy (.json)</label>
+          <button id="btn-export-json" class="btn-cute w-full justify-center bg-purple-300 hover:bg-purple-400 text-stone-900 py-2.5 px-4 text-xs font-black">
+            <span data-sketchy="save" data-size="15"></span>
+            Tải File Dữ Liệu Về Máy
+          </button>
+        </div>
+
+        <div class="pt-3 border-t-2 border-stone-800 dark:border-stone-200">
+          <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-2">Khôi phục từ file có sẵn (.json)</label>
+          <input type="file" id="input-import-file" accept=".json" class="hidden">
+          <button id="btn-trigger-import" class="btn-cute w-full justify-center bg-stone-100 hover:bg-stone-200 text-stone-800 dark:text-stone-200 dark:bg-stone-800 py-2.5 px-4 text-xs font-black">
+            <span data-sketchy="note" data-size="15"></span>
+            Chọn File Để Nạp Lại Sổ
+          </button>
+        </div>
+
+        <div class="pt-3 border-t-2 border-stone-800 dark:border-stone-200">
+          <button id="btn-reset-default" class="w-full flex items-center justify-center gap-1.5 py-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-xs font-black transition">
+            <span data-sketchy="reset" data-size="14"></span>
+            Đặt lại dữ liệu mẫu gốc
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Kho Icon & Sticker (Irasutoya, Sketchy Hand-Drawn & Dashboard-Icons) -->
+  <div id="modal-icons" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[90vh] flex flex-col p-0 relative">
+      <div class="washi-tape mint"></div>
+
+      <!-- Header -->
+      <div class="drag-window-handle px-5 py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-teal-50 dark:bg-teal-950/40 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <div class="flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="sparkles" data-size="20" data-accent="#fef08a"></span>
+          <div>
+            <h3 class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
+              Kho Icon &amp; Sticker Vẽ Tay
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 font-bold border border-pink-300">Sketchy &amp; Stickers</span>
+            </h3>
+            <p class="text-[11px] text-stone-500 font-medium">Chọn icon nét bút Sketchy, sticker Irasutoya hoặc Dashboard Icons</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1">
+        
+        <!-- Source Switcher Tabs: Irasutoya vs Sketchy vs Dashboard Icons -->
+        <div class="flex items-center gap-2 border-b-2 border-stone-800 dark:border-stone-200 pb-2.5 overflow-x-auto no-scrollbar drag-scroll-x">
+          <button type="button" data-source="irasutoya" id="tab-source-irasutoya" class="btn-source-tab flex-shrink-0 px-3.5 py-1.5 rounded-xl font-black text-xs bg-pink-300 text-stone-900 border-2 border-stone-800 shadow-[2px_2px_0px_#292524] transition flex items-center gap-1.5 active-source">
+            <span data-sketchy="rabbit" data-size="15" data-accent="#fbcfe8"></span>
+            <span>いらすとや (Stickers)</span>
+          </button>
+          <button type="button" data-source="sketchy" id="tab-source-sketchy" class="btn-source-tab flex-shrink-0 px-3.5 py-1.5 rounded-xl font-black text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-2 border-stone-800 dark:border-stone-300 transition flex items-center gap-1.5">
+            <span data-sketchy="brush" data-size="15" data-accent="#fef08a"></span>
+            <span>Sketchy Vẽ Tay</span>
+          </button>
+          <button type="button" data-source="dashboard" id="tab-source-dashboard" class="btn-source-tab flex-shrink-0 px-3.5 py-1.5 rounded-xl font-black text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-2 border-stone-800 dark:border-stone-300 transition flex items-center gap-1.5">
+            <span data-sketchy="sparkles" data-size="15" data-accent="#bae6fd"></span>
+            <span>Dashboard Icons (MCP)</span>
+          </button>
+        </div>
+
+        <!-- Search and Categories -->
+        <div class="space-y-2">
+          <div class="relative">
+            <span data-sketchy="search" data-size="15" class="absolute left-3 top-1/2 -translate-y-1/2 opacity-70 pointer-events-none"></span>
+            <input type="text" id="input-search-icons" placeholder="Tìm sticker hoặc icon (học bài, thỏ, mèo, cà phê, notion, figma...)..." class="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-teal-400 focus:outline-none">
+          </div>
+
+          <!-- Category Chips -->
+          <div class="flex items-center gap-1.5 text-xs overflow-x-auto no-scrollbar drag-scroll-x pb-0.5" id="icon-category-chips">
+            <button type="button" data-cat="all" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-teal-200 text-stone-900 border border-stone-800 inline-flex items-center gap-1">Tất Cả</button>
+            <button type="button" data-cat="study" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-300 dark:border-stone-700 inline-flex items-center gap-1"><span data-sketchy="book" data-size="13"></span><span>Học Tập</span></button>
+            <button type="button" data-cat="animal" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-300 dark:border-stone-700 inline-flex items-center gap-1"><span data-sketchy="rabbit" data-size="13"></span><span>Động Vật</span></button>
+            <button type="button" data-cat="work" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-300 dark:border-stone-700 inline-flex items-center gap-1"><span data-sketchy="briefcase" data-size="13"></span><span>Công Việc</span></button>
+            <button type="button" data-cat="fitness" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-300 dark:border-stone-700 inline-flex items-center gap-1"><span data-sketchy="flame" data-size="13"></span><span>Thể Thao</span></button>
+            <button type="button" data-cat="chill" class="btn-icon-cat flex-shrink-0 px-2.5 py-1 rounded-full font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-300 dark:border-stone-700 inline-flex items-center gap-1"><span data-sketchy="coffee" data-size="13"></span><span>Ăn Uống &amp; Chill</span></button>
+          </div>
+        </div>
+
+        <!-- Icons Grid Display -->
+        <div id="icons-grid-display" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+          <!-- Populated by JS -->
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="px-5 py-3 border-t-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-stone-50 dark:bg-stone-900 rounded-b-2xl flex-shrink-0 text-xs">
+        <span class="text-stone-500 font-medium">Bộ icon: <a href="https://github.com/Ali0092/Sketchy" target="_blank" rel="noopener noreferrer" class="underline hover:text-pink-600 font-bold text-stone-700 dark:text-stone-300">Sketchy</a>, <a href="https://www.irasutoya.com/" target="_blank" rel="noopener noreferrer" class="underline hover:text-pink-600 font-bold text-stone-700 dark:text-stone-300">いらすとや</a> &amp; DashboardIcons</span>
+        <button type="button" class="btn-close-modal btn-cute bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-1.5 text-xs">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Xuất Tất Cả Ngày Thành 1 Bức Ảnh (1-Image Poster Export) -->
+  <div id="modal-export-image" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[92vh] flex flex-col p-0 relative">
+      <div class="washi-tape coral"></div>
+      
+      <!-- Modal Header -->
+      <div class="drag-window-handle px-5 py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-rose-50 dark:bg-rose-950/40 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <div class="flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="camera" data-size="20" data-accent="#fecdd3"></span>
+          <div>
+            <h3 class="font-black text-base text-stone-800 dark:text-stone-100">Xuất Tất Cả Các Ngày Trên 1 Bức Ảnh</h3>
+            <p class="text-[11px] text-stone-500 font-medium">Gom toàn bộ lịch tuần thành 1 bức ảnh chất lượng cao để cài hình nền hoặc lưu trữ</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+        
+        <!-- Controls: Aspect Ratio & Theme -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Ratio Selector -->
+          <div>
+            <label class="flex items-center gap-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 mb-1.5">
+              <span data-sketchy="layers" data-size="14"></span>
+              <span>1. Chọn Tỷ Lệ Ảnh</span>
+            </label>
+            <div class="grid grid-cols-3 gap-1.5 text-xs font-bold">
+              <button type="button" data-ratio="mobile" class="btn-poster-ratio btn-cute justify-center py-2 px-2 text-center bg-rose-200 border-2 border-stone-800 active-ratio flex-col gap-0.5">
+                <span class="inline-flex items-center justify-center gap-1"><span data-sketchy="smartphone" data-size="14"></span><span>9:16</span></span>
+                <span class="block text-[10px] text-stone-600 dark:text-stone-400 font-bold">Khóa Máy (2/3 dưới)</span>
+              </button>
+              <button type="button" data-ratio="desktop" class="btn-poster-ratio btn-cute justify-center py-2 px-2 text-center bg-stone-100 dark:bg-stone-800 border-2 border-stone-800 flex-col gap-0.5">
+                <span class="inline-flex items-center justify-center gap-1"><span data-sketchy="monitor" data-size="14"></span><span>16:9</span></span>
+                <span class="block text-[10px] text-stone-600 dark:text-stone-400 font-normal">Máy Tính</span>
+              </button>
+              <button type="button" data-ratio="poster" class="btn-poster-ratio btn-cute justify-center py-2 px-2 text-center bg-stone-100 dark:bg-stone-800 border-2 border-stone-800 flex-col gap-0.5">
+                <span class="inline-flex items-center justify-center gap-1"><span data-sketchy="calendar" data-size="14"></span><span>Lưới</span></span>
+                <span class="block text-[10px] text-stone-600 dark:text-stone-400 font-normal">Sổ Tay Tuần</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Color Theme Picker -->
+          <div>
+            <label class="flex items-center gap-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 mb-1.5">
+              <span data-sketchy="palette" data-size="14" data-accent="#fbcfe8"></span>
+              <span>2. Màu Nền Sổ Tay</span>
+            </label>
+            <div class="flex flex-wrap items-center gap-2 pt-1" id="poster-theme-options">
+              <button type="button" data-bg="#fffdf7" data-border="#f472b6" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#fffdf7] border-2 border-pink-400 ring-2 ring-pink-500 shadow-sm" title="Kem Vintage"></button>
+              <button type="button" data-bg="#fdf2f8" data-border="#db2777" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#fdf2f8] border-2 border-stone-700 shadow-sm" title="Hồng Pastel"></button>
+              <button type="button" data-bg="#fefce8" data-border="#ca8a04" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#fefce8] border-2 border-stone-700 shadow-sm" title="Vàng Bơ"></button>
+              <button type="button" data-bg="#f0fdf4" data-border="#16a34a" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#f0fdf4] border-2 border-stone-700 shadow-sm" title="Xanh Bạc Hà"></button>
+              <button type="button" data-bg="#faf5ff" data-border="#9333ea" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#faf5ff] border-2 border-stone-700 shadow-sm" title="Tím Lavender"></button>
+              <button type="button" data-bg="#f0f9ff" data-border="#0284c7" data-theme="light" class="btn-poster-theme w-8 h-8 rounded-full bg-[#f0f9ff] border-2 border-stone-700 shadow-sm" title="Xanh Da Trời"></button>
+              <button type="button" data-bg="#18181b" data-border="#e2e8f0" data-theme="dark" class="btn-poster-theme w-8 h-8 rounded-full bg-[#18181b] border-2 border-stone-300 shadow-sm flex items-center justify-center text-stone-100" title="Nền Đen Dạ Quang (OLED)"><span data-sketchy="moon" data-size="14" data-accent="#fef08a"></span></button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Preview Box -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
+              <span data-sketchy="eye" data-size="15"></span>
+              <span>Xem Trước Bức Ảnh (Tất Cả Các Ngày)</span>
+            </span>
+            <span class="text-[11px] text-pink-600 dark:text-pink-400 font-bold" id="poster-ratio-badge">Tỷ lệ: 9:16 (Điện thoại)</span>
+          </div>
+          
+          <div class="border-2 border-dashed border-stone-400 dark:border-stone-600 rounded-2xl p-2 bg-stone-100 dark:bg-stone-800/50 flex justify-center items-center overflow-auto max-h-[360px]">
+            <!-- Preview wrapper scaling -->
+            <div id="poster-preview-container" class="transform-gpu transition-all duration-300">
+              <!-- Dynamically populated poster -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-stone-50 dark:bg-stone-900 rounded-b-2xl flex-shrink-0">
+        <button type="button" class="btn-close-modal btn-cute bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-2 text-xs">
+          Đóng
+        </button>
+
+        <button id="btn-download-poster" class="btn-cute bg-rose-400 hover:bg-rose-500 text-stone-900 px-5 py-2 text-xs font-black shadow-[2px_2px_0px_#292524] flex items-center gap-2">
+          <span data-sketchy="download" data-size="15"></span>
+          <span id="btn-download-poster-text">Tải Ảnh PNG Về Máy (Nét Cao)</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Offscreen Capture Container (Captured by html2canvas at high resolution) -->
+  <div id="poster-capture-wrapper" style="position: absolute; left: -9999px; top: 0; pointer-events: none;">
+    <!-- Rendered for capture -->
+  </div>
+
+  <!-- Floating Focus Music & YouTube Widget ("Đài Radio Bàn Học") -->
+  <div id="music-widget" class="fixed bottom-4 left-4 z-40 w-[340px] max-w-[92vw] sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
+    <div class="washi-tape mint"></div>
+    <div class="drag-window-handle px-4 py-2.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+      <div class="flex items-center gap-1.5">
+        <span data-sketchy="grip" data-size="14" class="opacity-50"></span>
+        <span data-sketchy="headphones" data-size="17" data-accent="#a7f3d0"></span>
+        <span class="font-black text-xs text-stone-800 dark:text-stone-100">Đài Radio &amp; YouTube Bàn Học</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="btn-minimize-music" class="px-1.5 py-0.5 rounded hover:bg-emerald-200 dark:hover:bg-stone-800 text-xs font-black" title="Thu gọn xuống góc">—</button>
+        <button id="btn-close-music" class="px-1.5 py-0.5 rounded hover:bg-rose-200 dark:hover:bg-stone-800 text-xs font-black" title="Đóng">✕</button>
+      </div>
+    </div>
+
+    <div class="p-3 space-y-2.5 text-xs">
+      <!-- Music Tabs -->
+      <div class="flex gap-1.5 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl border border-stone-800 dark:border-stone-500">
+        <button type="button" data-tab="youtube" class="btn-music-tab flex-1 py-1.5 rounded-lg font-black bg-rose-300 text-stone-900 border border-stone-800 transition inline-flex items-center justify-center gap-1.5">
+          <span data-sketchy="youtube" data-size="15" data-accent="#fecdd3"></span>
+          <span>YouTube</span>
+        </button>
+        <button type="button" data-tab="ambient" class="btn-music-tab flex-1 py-1.5 rounded-lg font-bold text-stone-600 dark:text-stone-300 transition inline-flex items-center justify-center gap-1.5">
+          <span data-sketchy="music" data-size="15" data-accent="#a7f3d0"></span>
+          <span>Nhạc Chill Offline</span>
+        </button>
+      </div>
+
+      <!-- YouTube Panel -->
+      <div id="music-panel-youtube" class="space-y-2">
+        <div class="flex gap-1.5">
+          <input type="text" id="input-yt-url" placeholder="Dán link YouTube (video / playlist)..." class="flex-1 px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-stone-50 dark:bg-stone-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-400">
+          <button type="button" id="btn-play-yt" class="btn-cute bg-rose-400 hover:bg-rose-500 text-stone-900 px-3 py-1 text-xs inline-flex items-center gap-1">
+            <span data-sketchy="play" data-size="13"></span>
+            <span>Phát</span>
+          </button>
+        </div>
+
+        <!-- Quick YouTube Study Presets -->
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar drag-scroll-x pb-0.5">
+          <button type="button" data-yt-url="https://www.youtube.com/watch?v=jfKfPfyJRdk" data-yt-title="Lofi Girl Study Radio" class="btn-yt-preset flex-shrink-0 px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 border border-rose-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="headphones" data-size="12"></span><span>Lofi Radio</span></button>
+          <button type="button" data-yt-url="https://www.youtube.com/watch?v=4xDzrJKXOOY" data-yt-title="Synthwave Chill Radio" class="btn-yt-preset flex-shrink-0 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 border border-purple-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="sparkles" data-size="12"></span><span>Synthwave</span></button>
+          <button type="button" data-yt-url="https://www.youtube.com/watch?v=Dx5qFachd3A" data-yt-title="Smooth Jazz Piano" class="btn-yt-preset flex-shrink-0 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="coffee" data-size="12"></span><span>Cafe Jazz</span></button>
+          <button type="button" data-yt-url="https://www.youtube.com/watch?v=mPZkdNFkNps" data-yt-title="Rain Sounds Study" class="btn-yt-preset flex-shrink-0 px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 border border-sky-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="rain" data-size="12"></span><span>Tiếng Mưa YT</span></button>
+        </div>
+
+        <!-- Video Embed Frame -->
+        <div id="yt-player-container" class="w-full aspect-video rounded-xl overflow-hidden border-2 border-stone-800 dark:border-stone-500 bg-stone-950 flex items-center justify-center text-stone-400 text-[11px] text-center">
+          <span class="p-3">Chọn một kênh mẫu hoặc dán link YouTube để phát ngay tại đây</span>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px]">
+          <span id="yt-current-title" class="font-bold text-stone-600 dark:text-stone-300 truncate max-w-[190px]">Chưa chọn video</span>
+          <a id="btn-open-yt-external" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" class="font-bold text-rose-600 dark:text-rose-400 hover:underline hidden">Mở tab YouTube ↗</a>
+        </div>
+        <p id="yt-file-protocol-tip" class="text-[10px] text-stone-500 dark:text-stone-400 leading-tight hidden">
+          Mẹo: Mở ứng dụng bằng <strong>Mo-Thoi-Gian-Bieu.bat</strong> (chạy qua localhost) để xem YouTube trực tiếp không bị Lỗi 153, hoặc bấm <strong>Mở tab YouTube ↗</strong>.
+        </p>
+      </div>
+
+      <!-- Offline Ambient Synth Panel -->
+      <div id="music-panel-ambient" class="hidden space-y-2.5">
+        <p class="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Chạy 100% trực tiếp trên trình duyệt, không cần mạng hay tài khoản:</p>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" data-preset="lofi" class="btn-ambient-preset p-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-pink-50 dark:bg-stone-800 font-bold text-left hover:bg-pink-100 transition inline-flex items-center gap-1.5"><span data-sketchy="music" data-size="15"></span><span>Lofi Piano</span></button>
+          <button type="button" data-preset="rain" class="btn-ambient-preset p-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-sky-50 dark:bg-stone-800 font-bold text-left hover:bg-sky-100 transition inline-flex items-center gap-1.5"><span data-sketchy="rain" data-size="15"></span><span>Tiếng Mưa</span></button>
+          <button type="button" data-preset="ocean" class="btn-ambient-preset p-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-teal-50 dark:bg-stone-800 font-bold text-left hover:bg-teal-100 transition inline-flex items-center gap-1.5"><span data-sketchy="ocean" data-size="15"></span><span>Sóng Biển</span></button>
+          <button type="button" data-preset="focus" class="btn-ambient-preset p-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-amber-50 dark:bg-stone-800 font-bold text-left hover:bg-amber-100 transition inline-flex items-center gap-1.5"><span data-sketchy="coffee" data-size="15"></span><span>Quán Cà Phê</span></button>
+        </div>
+
+        <div class="flex items-center justify-between gap-2 pt-1 border-t border-dashed border-stone-300 dark:border-stone-700">
+          <button type="button" id="btn-ambient-toggle" class="btn-cute bg-emerald-300 hover:bg-emerald-400 text-stone-900 px-3 py-1.5 text-xs inline-flex items-center gap-1"><span data-sketchy="play" data-size="14"></span><span>Phát Nhạc</span></button>
+          <div class="flex items-center gap-1.5 flex-1">
+            <span data-sketchy="volume" data-size="15" class="opacity-80"></span>
+            <input type="range" id="music-volume" min="0" max="100" value="45" class="w-full accent-emerald-500 cursor-pointer">
+          </div>
+        </div>
+        <div id="ambient-status-label" class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 text-center">Đang tạm dừng</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimized Music Pill -->
+  <button id="music-mini-pill" class="fixed bottom-4 left-4 z-40 btn-cute bg-emerald-200 hover:bg-emerald-300 text-stone-900 px-3 py-1.5 text-xs font-black hidden no-print" title="Mở lại góc nhạc">
+    <span data-sketchy="headphones" data-size="15" data-accent="#a7f3d0"></span>
+    <span id="music-mini-label">Đang phát nhạc</span>
+  </button>
+
+  <!-- Floating Pomodoro Timer Popover -->
+  <div id="pomodoro-widget" class="fixed top-28 left-1/2 -translate-x-1/2 z-[55] w-[300px] max-w-[92vw] sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
+    <div class="washi-tape yellow"></div>
+    <div class="drag-window-handle px-4 py-2.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-amber-50 dark:bg-amber-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+      <div class="flex items-center gap-1.5">
+        <span data-sketchy="grip" data-size="14" class="opacity-50"></span>
+        <span data-sketchy="timer" data-size="16" data-accent="#fef08a"></span>
+        <span class="font-black text-xs text-stone-800 dark:text-stone-100">Đồng Hồ Tập Trung</span>
+      </div>
+      <button id="btn-close-pomo" class="text-xs font-black text-stone-500 hover:text-stone-900 dark:hover:text-white">✕</button>
+    </div>
+
+    <div class="p-4 text-center space-y-3">
+      <div id="pomo-active-task" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 truncate">
+        Phiên tập trung tự do
+      </div>
+
+      <div class="flex justify-center gap-1.5 text-[11px] font-bold">
+        <button type="button" data-minutes="25" class="btn-pomo-mode px-2.5 py-1 rounded-lg bg-pink-200 text-stone-900 border border-stone-800">25p Làm</button>
+        <button type="button" data-minutes="5" class="btn-pomo-mode px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-400">5p Nghỉ</button>
+        <button type="button" data-minutes="15" class="btn-pomo-mode px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-400">15p Dài</button>
+      </div>
+
+      <div id="pomo-time-display" class="text-4xl font-black tracking-wider text-stone-900 dark:text-white py-1">25:00</div>
+
+      <div class="flex justify-center gap-2">
+        <button type="button" id="btn-pomo-toggle" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 px-5 py-1.5 text-xs inline-flex items-center gap-1"><span data-sketchy="play" data-size="13"></span><span>Bắt đầu</span></button>
+        <button type="button" id="btn-pomo-reset" class="btn-cute bg-stone-100 hover:bg-stone-200 text-stone-800 px-3 py-1.5 text-xs inline-flex items-center gap-1"><span data-sketchy="reset" data-size="13"></span><span>Đặt lại</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating AI Assistant Button (Bottom Right) -->
+  <button id="btn-ai-fab" class="fixed bottom-5 right-5 z-40 btn-cute bg-indigo-400 hover:bg-indigo-500 text-stone-900 px-4 py-2.5 text-xs sm:text-sm font-black shadow-[3px_3px_0px_#292524] flex items-center gap-2 no-print" title="Mở Trợ Lý AI">
+    <span data-sketchy="bot" data-size="18" data-accent="#e0e7ff"></span>
+    <span>Hỏi Trợ Lý AI</span>
+  </button>
+
+  <!-- AI Assistant Chat Panel (Doodle Notebook Drawer) -->
+  <div id="ai-chat-panel" class="fixed bottom-4 right-4 z-50 w-[390px] max-w-[94vw] h-[540px] max-h-[82vh] sketch-box bg-white dark:bg-stone-900 p-0 flex flex-col hidden no-print">
+    <div class="washi-tape purple"></div>
+
+    <!-- Chat Header -->
+    <div class="drag-window-handle px-4 py-3 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-indigo-50 dark:bg-indigo-950/50 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+      <div class="flex items-center gap-2 min-w-0">
+        <span data-sketchy="grip" data-size="14" class="opacity-50 flex-shrink-0"></span>
+        <span data-sketchy="bot" data-size="19" data-accent="#c7d2fe" class="flex-shrink-0"></span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <h3 class="font-black text-xs sm:text-sm text-stone-800 dark:text-stone-100 truncate">Trợ Lý AI Sổ Tay</h3>
+            <span id="ai-model-badge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-200 text-indigo-900 border border-indigo-500">Chưa gắn Key</span>
+          </div>
+          <p class="text-[10px] text-stone-500 dark:text-stone-400 font-medium truncate">Trò chuyện, tự động ghi việc &amp; mở nhạc</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button type="button" id="btn-ai-settings-toggle" class="p-1.5 rounded-lg hover:bg-indigo-200 dark:hover:bg-stone-800 text-xs font-bold inline-flex items-center justify-center" title="Cài đặt API Key"><span data-sketchy="settings" data-size="15"></span></button>
+        <button type="button" id="btn-ai-clear" class="p-1.5 rounded-lg hover:bg-indigo-200 dark:hover:bg-stone-800 text-xs font-bold inline-flex items-center justify-center" title="Xóa đoạn chat"><span data-sketchy="trash" data-size="15"></span></button>
+        <button type="button" id="btn-ai-close" class="p-1.5 rounded-lg hover:bg-rose-200 dark:hover:bg-stone-800 text-xs font-black" title="Đóng">✕</button>
+      </div>
+    </div>
+
+    <!-- AI API Settings Sub-panel -->
+    <div id="ai-settings-panel" class="p-3.5 bg-amber-50/90 dark:bg-stone-800/95 border-b-2 border-stone-800 dark:border-stone-300 space-y-2.5 text-xs hidden flex-shrink-0 overflow-y-auto max-h-[300px]">
+      <div class="flex items-center justify-between">
+        <span class="font-black text-stone-800 dark:text-stone-100 inline-flex items-center gap-1.5"><span data-sketchy="settings" data-size="14"></span><span>Kết Nối API AI</span></span>
+        <span class="text-[10px] text-stone-500 dark:text-stone-400">Chỉ lưu cục bộ trên trình duyệt</span>
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">Nhà cung cấp API</label>
+        <select id="ai-provider" class="w-full px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 font-bold text-xs">
+          <option value="gemini">Google Gemini (Interactions API)</option>
+          <option value="gemini-classic">Google Gemini (Classic generateContent)</option>
+          <option value="openai">OpenAI-Compatible (OpenAI / Groq / OpenRouter / Ollama)</option>
+        </select>
+      </div>
+
+      <div id="ai-endpoint-group" class="hidden">
+        <label class="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">Endpoint URL</label>
+        <input type="url" id="ai-endpoint" value="https://api.openai.com/v1/chat/completions" placeholder="https://api.openai.com/v1/chat/completions" class="w-full px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 font-semibold text-xs">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <label class="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">Model</label>
+          <select id="ai-model-select" class="w-full px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 font-bold text-xs">
+            <option value="gemini-3.8-flash">gemini-3.8-flash (Khuyên dùng)</option>
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Siêu nhanh)</option>
+            <option value="gemini-4-argon">gemini-4-argon</option>
+            <option value="gemini-4-carbon">gemini-4-carbon</option>
+          </select>
+          <input type="text" id="ai-model-custom" placeholder="VD: gpt-4o-mini, llama-3.3-70b-versatile" class="hidden w-full px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 font-semibold text-xs">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">API Key</label>
+          <div class="flex gap-1">
+            <input type="password" id="ai-api-key" placeholder="Dán API Key vào đây..." class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-white dark:bg-stone-900 font-semibold text-xs">
+            <button type="button" id="btn-toggle-key-vis" class="px-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-stone-100 dark:bg-stone-700 text-xs inline-flex items-center justify-center" title="Hiện/Ẩn Key"><span data-sketchy="eye" data-size="14"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Lấy Gemini Key ↗</a>
+        <button type="button" id="btn-save-ai-settings" class="btn-cute bg-indigo-400 hover:bg-indigo-500 text-stone-900 px-3.5 py-1 text-xs">Lưu Cài Đặt</button>
+      </div>
+    </div>
+
+    <!-- Chat History Messages -->
+    <div id="ai-chat-messages" class="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs bg-stone-50/50 dark:bg-stone-950/30">
+      <!-- Populated dynamically -->
+    </div>
+
+    <!-- Quick Suggestion Chips -->
+    <div class="px-3 py-1.5 border-t border-stone-200 dark:border-stone-800 flex gap-1.5 overflow-x-auto no-scrollbar drag-scroll-x flex-shrink-0 bg-white dark:bg-stone-900">
+      <button type="button" data-prompt="Ghi giúp mình việc Ôn Tiếng Anh từ 20:00 đến 21:00 hôm nay nhé" class="btn-ai-chip flex-shrink-0 px-2.5 py-1 rounded-full bg-pink-100 dark:bg-pink-950/60 border border-pink-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="pencil" data-size="12"></span><span>Ghi việc mới</span></button>
+      <button type="button" data-prompt="Mở nhạc Lofi piano chill học bài giúp mình" class="btn-ai-chip flex-shrink-0 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="music" data-size="12"></span><span>Mở nhạc Lofi</span></button>
+      <button type="button" data-prompt="Bật tiếng mưa rơi thư giãn giúp mình" class="btn-ai-chip flex-shrink-0 px-2.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 border border-sky-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="rain" data-size="12"></span><span>Tiếng mưa</span></button>
+      <button type="button" data-prompt="Tóm tắt lịch hôm nay và gợi ý cách làm hiệu quả" class="btn-ai-chip flex-shrink-0 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="calendar" data-size="12"></span><span>Xem lịch hôm nay</span></button>
+      <button type="button" data-prompt="Bắt đầu đồng hồ Pomodoro 25 phút" class="btn-ai-chip flex-shrink-0 px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 border border-purple-400 text-[10px] font-bold hover:scale-105 transition inline-flex items-center gap-1"><span data-sketchy="timer" data-size="12"></span><span>Bật Pomodoro</span></button>
+    </div>
+
+    <!-- Chat Input Bar -->
+    <form id="form-ai-chat" class="p-2.5 border-t-2 border-stone-800 dark:border-stone-200 bg-white dark:bg-stone-900 rounded-b-2xl flex gap-2 items-center flex-shrink-0">
+      <input type="text" id="input-ai-prompt" placeholder="Nhắn: Ghi chú, mở nhạc, hỏi lịch..." class="flex-1 px-3 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-400 bg-stone-50 dark:bg-stone-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400" autocomplete="off">
+      <button type="submit" id="btn-ai-send" class="btn-cute bg-indigo-400 hover:bg-indigo-500 text-stone-900 px-3.5 py-2 text-xs font-black">Gửi</button>
+    </form>
+  </div>
+
+  <!-- Modal: Đăng Nhập / Đăng Ký / Tài Khoản (Ghi nhớ 30 ngày) -->
+  <div id="modal-auth" class="fixed inset-0 z-[58] bg-stone-900/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden no-print">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md flex flex-col p-0 relative">
+      <div class="washi-tape pink"></div>
+
+      <!-- Modal Header -->
+      <div class="drag-window-handle px-5 py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-rose-50 dark:bg-rose-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+        <div class="flex items-center gap-2.5">
+          <span data-sketchy="grip" data-size="14" class="opacity-50"></span>
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-200 via-amber-100 to-sky-200 border-2 border-stone-800 dark:border-stone-200 p-0.5 flex-shrink-0 overflow-hidden">
+            <img src="./logo.png" alt="Logo Tanas" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <h3 class="font-black text-sm sm:text-base text-stone-800 dark:text-stone-100">Tài Khoản Thời Gian Biểu Tanas</h3>
+            <p class="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Lưu &amp; đồng bộ thời gian biểu mọi nơi</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-auth-modal" class="text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+      </div>
+
+      <!-- Logged-out View: Login & Register Tabs -->
+      <div id="auth-logged-out-view" class="p-5 space-y-4">
+        <div id="auth-offline-notice" class="hidden p-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-[11px] font-bold text-amber-800 dark:text-amber-200">
+          Bạn đang mở trực tiếp từ <code class="px-1 rounded bg-amber-200/70 dark:bg-stone-800">file://</code>. Hãy chạy bằng <strong>Mo-Thoi-Gian-Bieu.bat</strong> hoặc triển khai lên server Node.js để đăng nhập &amp; lưu tài khoản.
+        </div>
+
+        <!-- Tabs: Login vs Register -->
+        <div class="flex gap-1.5 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl border-2 border-stone-800 dark:border-stone-400 text-xs">
+          <button type="button" id="tab-auth-login" class="flex-1 py-2 rounded-lg font-black bg-pink-300 text-stone-900 border border-stone-800 transition inline-flex items-center justify-center gap-1.5">
+            <span data-sketchy="lock" data-size="14" data-accent="#ffffff"></span>
+            <span>Đăng Nhập</span>
+          </button>
+          <button type="button" id="tab-auth-register" class="flex-1 py-2 rounded-lg font-bold text-stone-600 dark:text-stone-300 transition inline-flex items-center justify-center gap-1.5">
+            <span data-sketchy="user" data-size="14" data-accent="#fef08a"></span>
+            <span>Đăng Ký Mới</span>
+          </button>
+        </div>
+
+        <form id="form-auth" class="space-y-3 text-xs">
+          <!-- Display Name (Register Only) -->
+          <div id="auth-display-name-group" class="hidden">
+            <label for="auth-display-name" class="block font-bold text-stone-700 dark:text-stone-200 mb-1">Tên hiển thị</label>
+            <input type="text" id="auth-display-name" placeholder="Ví dụ: Tanas" maxlength="50" autocomplete="name" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+          </div>
+
+          <!-- Username -->
+          <div>
+            <label for="auth-username" class="block font-bold text-stone-700 dark:text-stone-200 mb-1">Tên đăng nhập *</label>
+            <input type="text" id="auth-username" required placeholder="Nhập tên đăng nhập (3–32 ký tự)..." autocomplete="username" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="auth-password" class="block font-bold text-stone-700 dark:text-stone-200 mb-1">Mật khẩu *</label>
+            <div class="flex gap-1.5">
+              <input type="password" id="auth-password" required placeholder="Tối thiểu 6 ký tự..." autocomplete="current-password" class="flex-1 px-3.5 py-2.5 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
+              <button type="button" id="btn-toggle-auth-pass" class="px-3 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 inline-flex items-center justify-center" title="Hiện / Ẩn mật khẩu">
+                <span data-sketchy="eye" data-size="16"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember Me 30 Days -->
+          <label for="auth-remember-me" class="flex items-start gap-2.5 p-2.5 rounded-xl border-2 border-dashed border-emerald-400 dark:border-emerald-700 bg-emerald-50/70 dark:bg-emerald-950/30 cursor-pointer select-none">
+            <input type="checkbox" id="auth-remember-me" checked class="mt-0.5 w-4 h-4 rounded border-2 border-stone-800 text-emerald-500 focus:ring-emerald-400 cursor-pointer">
+            <div>
+              <span class="block font-black text-stone-800 dark:text-stone-100">Ghi nhớ đăng nhập trong 30 ngày</span>
+              <span class="block text-[10px] text-stone-500 dark:text-stone-400 font-medium">Duy trì phiên bằng HttpOnly Cookie an toàn ngay cả khi đóng trình duyệt</span>
+            </div>
+          </label>
+
+          <!-- Error feedback -->
+          <div id="auth-error-box" class="hidden p-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-200 font-bold text-xs"></div>
+
+          <button type="submit" id="btn-auth-submit" class="w-full btn-cute justify-center bg-pink-400 hover:bg-pink-500 text-stone-900 py-2.5 text-sm font-black shadow-[3px_3px_0px_#292524]">
+            Đăng Nhập Ngay
+          </button>
+        </form>
+
+        <div class="pt-2 border-t-2 border-dashed border-stone-200 dark:border-stone-700 text-center">
+          <button type="button" id="btn-auth-guest" class="text-xs font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white underline">
+            Tiếp tục dùng chế độ Khách (chỉ lưu trên trình duyệt này)
+          </button>
+        </div>
+      </div>
+
+      <!-- Logged-in View: Account Profile & Cloud Sync -->
+      <div id="auth-logged-in-view" class="hidden p-5 space-y-4 text-xs">
+        <div class="p-4 rounded-2xl border-2 border-stone-800 dark:border-stone-300 bg-emerald-50/80 dark:bg-emerald-950/40 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-200 dark:bg-emerald-900 border-2 border-stone-800 dark:border-stone-200 flex items-center justify-center flex-shrink-0 text-stone-900 dark:text-white">
+            <span data-sketchy="cloud" data-size="22" data-accent="#ffffff"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div id="auth-profile-display-name" class="font-black text-base text-stone-900 dark:text-white truncate">Tanas</div>
+            <div id="auth-profile-username" class="text-[11px] font-bold text-stone-500 dark:text-stone-400 truncate">@tanas</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 space-y-1">
+          <div id="auth-profile-remember-badge" class="font-black text-emerald-700 dark:text-emerald-300">Ghi nhớ 30 ngày đang bật</div>
+          <div id="auth-profile-expiry" class="text-[11px] text-stone-500 dark:text-stone-400 font-medium"></div>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="button" id="btn-auth-sync-now" class="flex-1 btn-cute justify-center bg-sky-300 hover:bg-sky-400 text-stone-900 py-2 text-xs font-black">
+            <span data-sketchy="cloud" data-size="14" data-accent="#ffffff"></span>
+            <span>Đồng bộ lên Server</span>
+          </button>
+          <button type="button" id="btn-auth-logout" class="btn-cute justify-center bg-rose-200 hover:bg-rose-300 text-stone-900 px-4 py-2 text-xs font-black">
+            <span data-sketchy="logout" data-size="14"></span>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none items-center"></div>
+
+  <!-- Sketchy Hand-Drawn SVG Icons & Animated Illustrations Engine -->
+  <script src="sketchy.js"></script>
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+  <!-- Authentication & Backend Sync Client -->
+  <script src="auth.js"></script>
+  <!-- Studio Features Script (AI Assistant, Music & YouTube Player, Pomodoro & Live Tracker) -->
+  <script src="studio.js"></script>
+</body>
+</html>
