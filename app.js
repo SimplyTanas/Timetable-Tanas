@@ -2686,7 +2686,9 @@ window.ScheduleAPI = {
     streak: (() => {
       try { return JSON.parse(localStorage.getItem(LS_KEYS.STREAK) || 'null'); } catch (_) { return null; }
     })(),
-    preferences: window.StudioModules?.getPreferences ? window.StudioModules.getPreferences() : {},
+    preferences: window.StudioModules?.getPreferences
+      ? window.StudioModules.getPreferences(Boolean(window.TanasAuth?.isLoggedIn?.()))
+      : {},
     updatedAt: Number(localStorage.getItem('schedule_last_saved_at') || Date.now())
   }),
   applyRemoteSchedule: (data, ownerId = null) => {
@@ -2752,7 +2754,12 @@ window.ScheduleAPI = {
         notificationsEnabled: false,
         ambientPreset: 'lofi',
         musicVolume: 45,
-        pomoMinutes: 25
+        pomoMinutes: 25,
+        aiProvider: 'gemini',
+        aiEndpoint: 'https://api.openai.com/v1/chat/completions',
+        aiModel: 'gemini-3.8-flash',
+        aiApiKey: '',
+        resetAiKey: true
       });
     }
     renderAll();

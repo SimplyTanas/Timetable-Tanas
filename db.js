@@ -58,8 +58,18 @@ function createStorage(dataDir) {
         username_lower TEXT NOT NULL UNIQUE,
         display_name TEXT NOT NULL,
         password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_banned INTEGER NOT NULL DEFAULT 0,
+        banned_reason TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
-        last_login_at TEXT NOT NULL
+        last_login_at TEXT NOT NULL,
+        last_seen_at INTEGER NOT NULL DEFAULT 0,
+        ai_provider TEXT NOT NULL DEFAULT '',
+        ai_model TEXT NOT NULL DEFAULT '',
+        ai_endpoint TEXT NOT NULL DEFAULT '',
+        ai_key_enc TEXT NOT NULL DEFAULT '',
+        ai_key_mask TEXT NOT NULL DEFAULT '',
+        ai_updated_at INTEGER NOT NULL DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS sessions (
@@ -88,14 +98,37 @@ function createStorage(dataDir) {
       );
     `);
 
+    // Migrate existing SQLite users table columns cleanly if upgrading from v3.0/v3.1
+    const existingCols = new Set(db.prepare('PRAGMA table_info(users)').all().map(c => c.name));
+    const userMigrations = [
+      ['role', "TEXT NOT NULL DEFAULT 'user'"],
+      ['is_banned', 'INTEGER NOT NULL DEFAULT 0'],
+      ['banned_reason', "TEXT NOT NULL DEFAULT ''"],
+      ['last_seen_at', 'INTEGER NOT NULL DEFAULT 0'],
+      ['ai_provider', "TEXT NOT NULL DEFAULT ''"],
+      ['ai_model', "TEXT NOT NULL DEFAULT ''"],
+      ['ai_endpoint', "TEXT NOT NULL DEFAULT ''"],
+      ['ai_key_enc', "TEXT NOT NULL DEFAULT ''"],
+      ['ai_key_mask', "TEXT NOT NULL DEFAULT ''"],
+      ['ai_updated_at', 'INTEGER NOT NULL DEFAULT 0']
+    ];
+    for (const [col, def] of userMigrations) {
+      if (!existingCols.has(col)) {
+        db.exec(`ALTER TABLE users ADD COLUMN ${col} ${def}`);
+      }
+    }
+
     // Migrate any pre-existing legacy JSON records into SQLite once
     const existingUsersCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
     if (existingUsersCount === 0 && fs.existsSync(USERS_FILE)) {
       const legacyUsers = readJsonSafe(USERS_FILE, []);
       if (Array.isArray(legacyUsers) && legacyUsers.length > 0) {
         const insUser = db.prepare(`
-          INSERT OR IGNORE INTO users (id, username, username_lower, display_name, password_hash, created_at, last_login_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT OR IGNORE INTO users (
+            id, username, username_lower, display_name, password_hash,
+            role, is_banned, banned_reason, created_at, last_login_at, last_seen_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const insSess = db.prepare(`
           INSERT OR IGNORE INTO sessions (token_hash, user_id, remember_me, created_at, expires_at)
@@ -114,8 +147,12 @@ function createStorage(dataDir) {
             u.usernameLower || u.username.toLowerCase(),
             u.displayName || u.username,
             u.passwordHash,
+            u.role === 'admin' ? 'admin' : 'user',
+            u.isBanned ? 1 : 0,
+            u.bannedReason || '',
             u.createdAt || new Date().toISOString(),
-            u.lastLoginAt || new Date().toISOString()
+            u.lastLoginAt || new Date().toISOString(),
+            Number(u.lastSeenAt) || 0
           );
 
           const schedFile = path.join(SCHEDULES_DIR, `${sanitizeSafeId(u.id)}.json`);
@@ -150,11 +187,30 @@ function createStorage(dataDir) {
     const stmtFindUserByLower = db.prepare('SELECT * FROM users WHERE username_lower = ?');
     const stmtFindUserById = db.prepare('SELECT * FROM users WHERE id = ?');
     const stmtInsertUser = db.prepare(`
-      INSERT INTO users (id, username, username_lower, display_name, password_hash, created_at, last_login_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, username, username_lower, display_name, password_hash, role, created_at, last_login_at, last_seen_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const stmtUpdateLogin = db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?');
+    const stmtUpdateLogin = db.prepare('UPDATE users SET last_login_at = ?, last_seen_at = ? WHERE id = ?');
+    const stmtUpdateLastSeen = db.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?');
     const stmtUpdateProfile = db.prepare('UPDATE users SET display_name = ?, password_hash = ? WHERE id = ?');
+    const stmtUpdateRole = db.prepare('UPDATE users SET role = ? WHERE id = ?');
+    const stmtSetBanned = db.prepare('UPDATE users SET is_banned = ?, banned_reason = ?, last_seen_at = CASE WHEN ? = 1 THEN 0 ELSE last_seen_at END WHERE id = ?');
+    const stmtUpdateAiConfig = db.prepare(`
+      UPDATE users
+      SET ai_provider = ?, ai_model = ?, ai_endpoint = ?, ai_key_enc = ?, ai_key_mask = ?, ai_updated_at = ?
+      WHERE id = ?
+    `);
+    const stmtListUsersWithStats = db.prepare(`
+      SELECT
+        u.*,
+        (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.expires_at > ?) AS active_sessions,
+        us.boards_json,
+        us.tasks_json,
+        us.updated_at AS schedule_updated_at
+      FROM users u
+      LEFT JOIN user_schedules us ON us.user_id = u.id
+      ORDER BY u.last_seen_at DESC, u.created_at DESC
+    `);
 
     const stmtPruneSessions = db.prepare('DELETE FROM sessions WHERE expires_at <= ?');
     const stmtInsertSession = db.prepare(`
@@ -188,8 +244,18 @@ function createStorage(dataDir) {
         usernameLower: row.username_lower,
         displayName: row.display_name,
         passwordHash: row.password_hash,
+        role: row.role === 'admin' ? 'admin' : 'user',
+        isBanned: Boolean(row.is_banned),
+        bannedReason: row.banned_reason || '',
         createdAt: row.created_at,
-        lastLoginAt: row.last_login_at
+        lastLoginAt: row.last_login_at,
+        lastSeenAt: Number(row.last_seen_at) || 0,
+        aiProvider: row.ai_provider || '',
+        aiModel: row.ai_model || '',
+        aiEndpoint: row.ai_endpoint || '',
+        aiKeyEnc: row.ai_key_enc || '',
+        aiKeyMask: row.ai_key_mask || '',
+        aiUpdatedAt: Number(row.ai_updated_at) || 0
       };
     }
 
@@ -212,19 +278,74 @@ function createStorage(dataDir) {
           user.username.toLowerCase(),
           user.displayName || user.username,
           user.passwordHash,
+          user.role === 'admin' ? 'admin' : 'user',
           user.createdAt,
-          user.lastLoginAt
+          user.lastLoginAt,
+          Number(user.lastSeenAt) || 0
         );
         return this.findUserById(user.id);
       },
 
-      touchUserLogin(userId, isoTime) {
-        stmtUpdateLogin.run(isoTime, userId);
+      touchUserLogin(userId, isoTime, seenMs = Date.now()) {
+        stmtUpdateLogin.run(isoTime, seenMs, userId);
+      },
+
+      updateLastSeen(userId, seenMs = Date.now()) {
+        stmtUpdateLastSeen.run(Number(seenMs) || 0, userId);
       },
 
       updateUserProfile(userId, displayName, passwordHash) {
         stmtUpdateProfile.run(displayName, passwordHash, userId);
         return this.findUserById(userId);
+      },
+
+      updateUserRole(userId, role) {
+        const cleanRole = role === 'admin' ? 'admin' : 'user';
+        stmtUpdateRole.run(cleanRole, userId);
+        return this.findUserById(userId);
+      },
+
+      setUserBanned(userId, banned, reason = '') {
+        const flag = banned ? 1 : 0;
+        const cleanReason = banned ? String(reason || '').trim().slice(0, 200) : '';
+        stmtSetBanned.run(flag, cleanReason, flag, userId);
+        if (banned) {
+          stmtDeleteUserSessions.run(userId);
+        }
+        return this.findUserById(userId);
+      },
+
+      updateUserAiConfig(userId, cfg) {
+        stmtUpdateAiConfig.run(
+          String(cfg.provider || ''),
+          String(cfg.model || ''),
+          String(cfg.endpoint || ''),
+          String(cfg.keyEnc || ''),
+          String(cfg.keyMask || ''),
+          Number(cfg.updatedAt) || 0,
+          userId
+        );
+        return this.findUserById(userId);
+      },
+
+      listUsersWithStats() {
+        const now = Date.now();
+        return stmtListUsersWithStats.all(now).map(row => {
+          const user = mapUser(row);
+          let boardCount = 0;
+          let taskCount = 0;
+          try {
+            if (row.boards_json) boardCount = JSON.parse(row.boards_json).length;
+            if (row.tasks_json) taskCount = JSON.parse(row.tasks_json).length;
+          } catch (_) {}
+          return {
+            ...user,
+            activeSessionCount: Number(row.active_sessions) || 0,
+            boardCount,
+            taskCount,
+            scheduleUpdatedAt: Number(row.schedule_updated_at) || null
+          };
+        });
       },
 
       createSession(session) {
@@ -314,6 +435,29 @@ function createStorage(dataDir) {
   }
 
   // Fallback atomic JSON store (for Node < 22.5 environments)
+  function normalizeJsonUser(u) {
+    if (!u) return null;
+    return {
+      id: u.id,
+      username: u.username,
+      usernameLower: u.usernameLower || String(u.username || '').toLowerCase(),
+      displayName: u.displayName || u.username,
+      passwordHash: u.passwordHash,
+      role: u.role === 'admin' ? 'admin' : 'user',
+      isBanned: Boolean(u.isBanned),
+      bannedReason: u.bannedReason || '',
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      lastSeenAt: Number(u.lastSeenAt) || 0,
+      aiProvider: u.aiProvider || '',
+      aiModel: u.aiModel || '',
+      aiEndpoint: u.aiEndpoint || '',
+      aiKeyEnc: u.aiKeyEnc || '',
+      aiKeyMask: u.aiKeyMask || '',
+      aiUpdatedAt: Number(u.aiUpdatedAt) || 0
+    };
+  }
+
   return {
     engine: 'json',
     dbPath: DATA_DIR,
@@ -321,30 +465,41 @@ function createStorage(dataDir) {
     findUserByUsername(username) {
       const lower = String(username || '').trim().toLowerCase();
       const users = readJsonSafe(USERS_FILE, []);
-      return users.find(u => u && (u.usernameLower || u.username.toLowerCase()) === lower) || null;
+      return normalizeJsonUser(users.find(u => u && (u.usernameLower || u.username.toLowerCase()) === lower));
     },
 
     findUserById(userId) {
       const users = readJsonSafe(USERS_FILE, []);
-      return users.find(u => u && u.id === userId) || null;
+      return normalizeJsonUser(users.find(u => u && u.id === userId));
     },
 
     createUser(user) {
       const users = readJsonSafe(USERS_FILE, []);
-      const record = {
+      const record = normalizeJsonUser({
         ...user,
-        usernameLower: user.username.toLowerCase()
-      };
+        usernameLower: user.username.toLowerCase(),
+        lastSeenAt: Number(user.lastSeenAt) || 0
+      });
       users.push(record);
       writeJsonAtomic(USERS_FILE, users);
       return record;
     },
 
-    touchUserLogin(userId, isoTime) {
+    touchUserLogin(userId, isoTime, seenMs = Date.now()) {
       const users = readJsonSafe(USERS_FILE, []);
       const target = users.find(u => u && u.id === userId);
       if (target) {
         target.lastLoginAt = isoTime;
+        target.lastSeenAt = seenMs;
+        writeJsonAtomic(USERS_FILE, users);
+      }
+    },
+
+    updateLastSeen(userId, seenMs = Date.now()) {
+      const users = readJsonSafe(USERS_FILE, []);
+      const target = users.find(u => u && u.id === userId);
+      if (target) {
+        target.lastSeenAt = Number(seenMs) || 0;
         writeJsonAtomic(USERS_FILE, users);
       }
     },
@@ -356,7 +511,62 @@ function createStorage(dataDir) {
       target.displayName = displayName;
       target.passwordHash = passwordHash;
       writeJsonAtomic(USERS_FILE, users);
-      return target;
+      return normalizeJsonUser(target);
+    },
+
+    updateUserRole(userId, role) {
+      const users = readJsonSafe(USERS_FILE, []);
+      const target = users.find(u => u && u.id === userId);
+      if (!target) return null;
+      target.role = role === 'admin' ? 'admin' : 'user';
+      writeJsonAtomic(USERS_FILE, users);
+      return normalizeJsonUser(target);
+    },
+
+    setUserBanned(userId, banned, reason = '') {
+      const users = readJsonSafe(USERS_FILE, []);
+      const target = users.find(u => u && u.id === userId);
+      if (!target) return null;
+      target.isBanned = Boolean(banned);
+      target.bannedReason = banned ? String(reason || '').trim().slice(0, 200) : '';
+      if (banned) {
+        target.lastSeenAt = 0;
+        this.deleteUserSessions(userId);
+      }
+      writeJsonAtomic(USERS_FILE, users);
+      return normalizeJsonUser(target);
+    },
+
+    updateUserAiConfig(userId, cfg) {
+      const users = readJsonSafe(USERS_FILE, []);
+      const target = users.find(u => u && u.id === userId);
+      if (!target) return null;
+      target.aiProvider = String(cfg.provider || '');
+      target.aiModel = String(cfg.model || '');
+      target.aiEndpoint = String(cfg.endpoint || '');
+      target.aiKeyEnc = String(cfg.keyEnc || '');
+      target.aiKeyMask = String(cfg.keyMask || '');
+      target.aiUpdatedAt = Number(cfg.updatedAt) || 0;
+      writeJsonAtomic(USERS_FILE, users);
+      return normalizeJsonUser(target);
+    },
+
+    listUsersWithStats() {
+      const now = Date.now();
+      const users = readJsonSafe(USERS_FILE, []).map(normalizeJsonUser).filter(Boolean);
+      const sessions = readJsonSafe(SESSIONS_FILE, []).filter(s => s && Number(s.expiresAt) > now);
+      return users
+        .map(u => {
+          const sched = this.getSchedule(u.id);
+          return {
+            ...u,
+            activeSessionCount: sessions.filter(s => s.userId === u.id).length,
+            boardCount: sched ? sched.boards.length : 0,
+            taskCount: sched ? sched.tasks.length : 0,
+            scheduleUpdatedAt: sched ? sched.updatedAt : null
+          };
+        })
+        .sort((a, b) => (b.lastSeenAt - a.lastSeenAt) || String(b.createdAt).localeCompare(String(a.createdAt)));
     },
 
     createSession(session) {

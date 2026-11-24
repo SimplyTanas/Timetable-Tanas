@@ -1,6 +1,18 @@
-# Runtime user & schedule data (do not commit user accounts/sessions)
+# Runtime user, database, vault keys & encrypted secrets (NEVER commit to git)
 data/
 schedule-data.json
+.vault.key
+*.key
+*.pem
+*.enc
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+users.json
+sessions.json
+schedules/
 
 # Environment secrets
 .env

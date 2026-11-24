@@ -1148,10 +1148,10 @@
   }
 
   // --- Event Setup ---
-  function getPreferences() {
+  function getPreferences(includeSecret = false) {
     const volSlider = document.getElementById('music-volume');
     const volume = volSlider ? Math.max(0, Math.min(100, Number(volSlider.value))) : 45;
-    return {
+    const out = {
       notificationsEnabled: Boolean(notificationsEnabled),
       ambientPreset: currentAmbientPreset || 'lofi',
       musicVolume: Number.isFinite(volume) ? volume : 45,
@@ -1160,6 +1160,10 @@
       aiEndpoint: aiConfig.endpoint || 'https://api.openai.com/v1/chat/completions',
       aiModel: aiConfig.model || 'gemini-3.8-flash'
     };
+    if (includeSecret) {
+      out.aiApiKey = aiConfig.apiKey || '';
+    }
+    return out;
   }
 
   function persistLocalStudioPrefs() {
@@ -1213,8 +1217,11 @@
       updatePomoUI();
     }
 
-    if (prefs.aiProvider || prefs.aiModel || prefs.aiEndpoint) {
-      const provider = prefs.aiProvider === 'openai' ? 'openai' : 'gemini';
+    if (prefs.aiProvider || prefs.aiModel || prefs.aiEndpoint || Object.prototype.hasOwnProperty.call(prefs, 'aiApiKey')) {
+      const provider = prefs.aiProvider === 'openai' ? 'openai' : (aiConfig.provider || 'gemini');
+      const nextKey = Object.prototype.hasOwnProperty.call(prefs, 'aiApiKey') && (prefs.resetAiKey || prefs.aiApiKey)
+        ? String(prefs.aiApiKey || '')
+        : aiConfig.apiKey;
       aiConfig = {
         ...aiConfig,
         provider,
@@ -1223,7 +1230,8 @@
           : (aiConfig.endpoint || 'https://api.openai.com/v1/chat/completions'),
         model: typeof prefs.aiModel === 'string' && prefs.aiModel.trim()
           ? prefs.aiModel.trim()
-          : (provider === 'openai' ? 'gpt-4o-mini' : 'gemini-3.8-flash')
+          : (provider === 'openai' ? 'gpt-4o-mini' : 'gemini-3.8-flash'),
+        apiKey: nextKey
       };
       try {
         localStorage.setItem(AI_STORAGE_KEY, JSON.stringify(aiConfig));

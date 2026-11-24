@@ -23,6 +23,7 @@ const LOCAL_COMPAT_FILE = path.join(ROOT, 'schedule-data.json');
 const SESSION_COOKIE_NAME = 'tanas_session';
 const REMEMBER_MAX_AGE_SEC = 30 * 24 * 60 * 60; // 30 days
 const EPHEMERAL_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours fallback TTL for non-remembered sessions
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;        // 2 minutes active window for Online indicator
 
 const STATIC_ALLOWLIST = new Set([
   'index.html',
@@ -72,6 +73,64 @@ function verifyPassword(password, storedHash) {
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
+function getOrCreateVaultKey(dirPath) {
+  const keyFile = path.join(dirPath, '.vault.key');
+  try {
+    if (fs.existsSync(keyFile)) {
+      const hex = fs.readFileSync(keyFile, 'utf8').trim();
+      if (/^[0-9a-f]{64}$/i.test(hex)) {
+        return Buffer.from(hex, 'hex');
+      }
+    }
+  } catch (_) {}
+  const key = crypto.randomBytes(32);
+  try {
+    fs.mkdirSync(dirPath, { recursive: true });
+    fs.writeFileSync(keyFile, key.toString('hex'), { encoding: 'utf8', mode: 0o600 });
+  } catch (_) {}
+  return key;
+}
+
+function encryptVaultText(vaultKey, plaintext) {
+  const clean = String(plaintext || '');
+  if (!clean) return '';
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', vaultKey, iv);
+  const encrypted = Buffer.concat([cipher.update(clean, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `v1:${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
+function decryptVaultText(vaultKey, payload) {
+  const raw = String(payload || '');
+  if (!raw || !raw.startsWith('v1:')) return '';
+  try {
+    const [, ivHex, tagHex, dataHex] = raw.split(':');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', vaultKey, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    const plain = Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]);
+    return plain.toString('utf8');
+  } catch (_) {
+    return '';
+  }
+}
+
+function maskApiKey(rawKey) {
+  const k = String(rawKey || '').trim();
+  if (!k) return '';
+  if (k.length <= 8) return `••••${k.slice(-2)}`;
+  return `${k.slice(0, 6)}••••${k.slice(-4)}`;
+}
+
+function formatLocalDayStr(tsOrIso) {
+  const d = new Date(tsOrIso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function parseCookies(req) {
@@ -198,8 +257,62 @@ function extractAuthToken(req) {
 
 function createTanasServer(dataDir = DATA_DIR) {
   const store = createStorage(dataDir);
+  const vaultKey = getOrCreateVaultKey(dataDir);
+  const seenThrottleMap = new Map();
+  const configuredAdminUser = String(process.env.TANAS_ADMIN_USER || '').trim();
 
-  function authenticateRequest(req) {
+  function isRootAdminUser(user) {
+    if (!configuredAdminUser || !user) return false;
+    const uname = String(user.usernameLower || user.username || '').toLowerCase();
+    return uname === configuredAdminUser.toLowerCase();
+  }
+
+  function ensureDefaultAdmin() {
+    const adminPass = String(process.env.TANAS_ADMIN_PASSWORD || '');
+    if (!configuredAdminUser || !adminPass) return;
+    if (!/^[a-zA-Z0-9._-]{3,32}$/.test(configuredAdminUser) || adminPass.length < 6) return;
+
+    const existing = store.findUserByUsername(configuredAdminUser);
+    if (!existing) {
+      const nowIso = new Date().toISOString();
+      store.createUser({
+        id: 'u_admin_' + crypto.randomBytes(6).toString('hex'),
+        username: configuredAdminUser,
+        displayName: configuredAdminUser,
+        passwordHash: hashPassword(adminPass),
+        role: 'admin',
+        createdAt: nowIso,
+        lastLoginAt: nowIso,
+        lastSeenAt: 0
+      });
+    } else if (existing.role !== 'admin' && !existing.isBanned) {
+      store.updateUserRole(existing.id, 'admin');
+    }
+  }
+  ensureDefaultAdmin();
+
+  function serializePublicUser(user) {
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName || user.username,
+      role: user.role === 'admin' ? 'admin' : 'user',
+      isBanned: Boolean(user.isBanned),
+      bannedReason: user.bannedReason || '',
+      createdAt: user.createdAt
+    };
+  }
+
+  function touchSeenThrottled(userId, force = false) {
+    const now = Date.now();
+    const prev = seenThrottleMap.get(userId) || 0;
+    if (force || now - prev >= 15000) {
+      seenThrottleMap.set(userId, now);
+      store.updateLastSeen(userId, now);
+    }
+  }
+
+  function authenticateRequest(req, options = {}) {
     const token = extractAuthToken(req);
     if (!token) return null;
 
@@ -209,17 +322,53 @@ function createTanasServer(dataDir = DATA_DIR) {
     const user = store.findUserById(session.userId);
     if (!user) return null;
 
+    if (user.isBanned) {
+      store.deleteUserSessions(user.id);
+      return {
+        banned: true,
+        bannedReason: user.bannedReason || 'Tài khoản đã bị quản trị viên khóa.',
+        rawUser: user
+      };
+    }
+
+    if (!options.skipSeenTouch) {
+      touchSeenThrottled(user.id, Boolean(options.forceSeenTouch));
+    }
+
     return {
       token,
       session,
       rawUser: user,
-      user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName || user.username,
-        createdAt: user.createdAt
-      }
+      user: serializePublicUser(user)
     };
+  }
+
+  function requireAuth(req, res, options = {}) {
+    const auth = authenticateRequest(req, options);
+    if (!auth) {
+      sendJson(res, 401, { ok: false, error: 'Vui lòng đăng nhập để tiếp tục.' });
+      return null;
+    }
+    if (auth.banned) {
+      sendJson(
+        res,
+        403,
+        { ok: false, banned: true, error: `Tài khoản đã bị khóa: ${auth.bannedReason}` },
+        { 'Set-Cookie': buildClearCookie(req) }
+      );
+      return null;
+    }
+    return auth;
+  }
+
+  function requireAdmin(req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return null;
+    if (auth.user.role !== 'admin') {
+      sendJson(res, 403, { ok: false, error: 'Chỉ tài khoản Quản trị viên (Admin) mới có quyền truy cập.' });
+      return null;
+    }
+    return auth;
   }
 
   function createUserSession(userId, rememberMe) {
@@ -281,13 +430,16 @@ function createTanasServer(dataDir = DATA_DIR) {
         }
 
         const nowIso = new Date().toISOString();
+        const nowMs = Date.now();
         const newUser = store.createUser({
           id: 'u_' + crypto.randomBytes(8).toString('hex'),
           username: rawUser,
           displayName: displayName || rawUser,
           passwordHash: hashPassword(password),
+          role: 'user',
           createdAt: nowIso,
-          lastLoginAt: nowIso
+          lastLoginAt: nowIso,
+          lastSeenAt: nowMs
         });
 
         const { token, expiresAt } = createUserSession(newUser.id, rememberMe);
@@ -296,12 +448,7 @@ function createTanasServer(dataDir = DATA_DIR) {
           201,
           {
             ok: true,
-            user: {
-              id: newUser.id,
-              username: newUser.username,
-              displayName: newUser.displayName,
-              createdAt: newUser.createdAt
-            },
+            user: serializePublicUser(newUser),
             rememberMe,
             expiresAt,
             storage: store.getStats(newUser.id)
@@ -329,8 +476,15 @@ function createTanasServer(dataDir = DATA_DIR) {
         if (!user || !verifyPassword(password, user.passwordHash)) {
           return sendJson(res, 401, { ok: false, error: 'Sai tên đăng nhập hoặc mật khẩu.' });
         }
+        if (user.isBanned) {
+          return sendJson(res, 403, {
+            ok: false,
+            banned: true,
+            error: `Tài khoản đã bị khóa: ${user.bannedReason || 'Liên hệ quản trị viên.'}`
+          });
+        }
 
-        store.touchUserLogin(user.id, new Date().toISOString());
+        store.touchUserLogin(user.id, new Date().toISOString(), Date.now());
 
         const { token, expiresAt } = createUserSession(user.id, rememberMe);
         return sendJson(
@@ -338,12 +492,7 @@ function createTanasServer(dataDir = DATA_DIR) {
           200,
           {
             ok: true,
-            user: {
-              id: user.id,
-              username: user.username,
-              displayName: user.displayName || user.username,
-              createdAt: user.createdAt
-            },
+            user: serializePublicUser(user),
             rememberMe,
             expiresAt,
             storage: store.getStats(user.id)
@@ -357,10 +506,8 @@ function createTanasServer(dataDir = DATA_DIR) {
 
     // Update profile (displayName & optional password change)
     if (pathname === '/api/auth/profile' && (req.method === 'PUT' || req.method === 'PATCH')) {
-      const auth = authenticateRequest(req);
-      if (!auth) {
-        return sendJson(res, 401, { ok: false, error: 'Bạn cần đăng nhập để cập nhật tài khoản.' });
-      }
+      const auth = requireAuth(req, res);
+      if (!auth) return;
       try {
         const body = await readBodyJson(req, 64 * 1024);
         const nextDisplay = String(body.displayName || auth.user.displayName).trim().slice(0, 50);
@@ -384,23 +531,30 @@ function createTanasServer(dataDir = DATA_DIR) {
         const updatedUser = store.updateUserProfile(auth.user.id, nextDisplay, nextPassHash);
         return sendJson(res, 200, {
           ok: true,
-          user: {
-            id: updatedUser.id,
-            username: updatedUser.username,
-            displayName: updatedUser.displayName,
-            createdAt: updatedUser.createdAt
-          }
+          user: serializePublicUser(updatedUser)
         });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: 'Không thể cập nhật hồ sơ.' });
       }
     }
 
+    // Heartbeat ping for real-time Online presence
+    if (pathname === '/api/auth/ping' && req.method === 'POST') {
+      const auth = requireAuth(req, res, { forceSeenTouch: true });
+      if (!auth) return;
+      return sendJson(res, 200, { ok: true, serverTime: Date.now() });
+    }
+
     // Logout
     if (pathname === '/api/auth/logout' && req.method === 'POST') {
+      const auth = authenticateRequest(req, { skipSeenTouch: true });
       const token = extractAuthToken(req);
       if (token) {
         store.deleteSession(hashToken(token));
+      }
+      if (auth && !auth.banned) {
+        seenThrottleMap.delete(auth.user.id);
+        store.updateLastSeen(auth.user.id, 0);
       }
       return sendJson(res, 200, { ok: true }, { 'Set-Cookie': buildClearCookie(req) });
     }
@@ -410,6 +564,19 @@ function createTanasServer(dataDir = DATA_DIR) {
       const auth = authenticateRequest(req);
       if (!auth) {
         return sendJson(res, 200, { authenticated: false, user: null });
+      }
+      if (auth.banned) {
+        return sendJson(
+          res,
+          200,
+          {
+            authenticated: false,
+            banned: true,
+            bannedReason: auth.bannedReason,
+            user: null
+          },
+          { 'Set-Cookie': buildClearCookie(req) }
+        );
       }
       return sendJson(res, 200, {
         authenticated: true,
@@ -422,25 +589,44 @@ function createTanasServer(dataDir = DATA_DIR) {
 
     // Per-user schedule & preferences persistence API (authenticated)
     if (pathname === '/api/schedule') {
-      const auth = authenticateRequest(req);
-      if (!auth) {
-        return sendJson(res, 401, { ok: false, error: 'Vui lòng đăng nhập để đồng bộ lịch cá nhân.' });
-      }
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+
+      const buildOwnerAiPrefs = () => {
+        const decryptedKey = decryptVaultText(vaultKey, auth.rawUser.aiKeyEnc);
+        if (!auth.rawUser.aiProvider && !auth.rawUser.aiModel && !decryptedKey) return null;
+        return {
+          aiProvider: auth.rawUser.aiProvider || 'gemini',
+          aiModel: auth.rawUser.aiModel || '',
+          aiEndpoint: auth.rawUser.aiEndpoint || '',
+          aiApiKey: decryptedKey || ''
+        };
+      };
 
       if (req.method === 'GET') {
         const data = store.getSchedule(auth.user.id);
+        const aiPrefs = buildOwnerAiPrefs();
         if (!data) {
           return sendJson(res, 200, {
             ok: true,
             exists: false,
             data: null,
+            aiPrefs,
             storage: store.getStats(auth.user.id)
           });
+        }
+        const mergedPrefs = { ...(data.preferences || {}) };
+        if (aiPrefs) {
+          if (aiPrefs.aiProvider) mergedPrefs.aiProvider = aiPrefs.aiProvider;
+          if (aiPrefs.aiModel) mergedPrefs.aiModel = aiPrefs.aiModel;
+          if (aiPrefs.aiEndpoint) mergedPrefs.aiEndpoint = aiPrefs.aiEndpoint;
+          if (aiPrefs.aiApiKey) mergedPrefs.aiApiKey = aiPrefs.aiApiKey;
         }
         return sendJson(res, 200, {
           ok: true,
           exists: true,
-          data,
+          data: { ...data, preferences: mergedPrefs },
+          aiPrefs,
           storage: store.getStats(auth.user.id)
         });
       }
@@ -451,6 +637,28 @@ function createTanasServer(dataDir = DATA_DIR) {
           if (!body || !Array.isArray(body.boards) || !Array.isArray(body.tasks)) {
             return sendJson(res, 400, { ok: false, error: 'Dữ liệu thời gian biểu không hợp lệ.' });
           }
+          const incomingPrefs = body.preferences && typeof body.preferences === 'object' ? { ...body.preferences } : {};
+          const hasExplicitKey = Object.prototype.hasOwnProperty.call(incomingPrefs, 'aiApiKey');
+          const cleanRawKey = hasExplicitKey ? String(incomingPrefs.aiApiKey || '').trim() : '';
+          delete incomingPrefs.aiApiKey;
+
+          if (hasExplicitKey || incomingPrefs.aiProvider || incomingPrefs.aiModel || incomingPrefs.aiEndpoint) {
+            const nextKeyEnc = hasExplicitKey
+              ? (cleanRawKey ? encryptVaultText(vaultKey, cleanRawKey) : '')
+              : (auth.rawUser.aiKeyEnc || '');
+            const nextKeyMask = hasExplicitKey
+              ? (cleanRawKey ? maskApiKey(cleanRawKey) : '')
+              : (auth.rawUser.aiKeyMask || '');
+            store.updateUserAiConfig(auth.user.id, {
+              provider: incomingPrefs.aiProvider ?? auth.rawUser.aiProvider ?? '',
+              model: incomingPrefs.aiModel ?? auth.rawUser.aiModel ?? '',
+              endpoint: incomingPrefs.aiEndpoint ?? auth.rawUser.aiEndpoint ?? '',
+              keyEnc: nextKeyEnc,
+              keyMask: nextKeyMask,
+              updatedAt: hasExplicitKey ? Date.now() : (auth.rawUser.aiUpdatedAt || Date.now())
+            });
+          }
+
           const saved = store.saveSchedule(auth.user.id, {
             boards: body.boards,
             tasks: body.tasks,
@@ -458,7 +666,7 @@ function createTanasServer(dataDir = DATA_DIR) {
             theme: body.theme || 'light',
             layout: body.layout || 'columns',
             streak: body.streak || null,
-            preferences: body.preferences && typeof body.preferences === 'object' ? body.preferences : {},
+            preferences: incomingPrefs,
             updatedAt: Number(body.updatedAt) || Date.now()
           });
           return sendJson(res, 200, {
@@ -469,6 +677,237 @@ function createTanasServer(dataDir = DATA_DIR) {
         } catch (err) {
           return sendJson(res, err.status || 400, { ok: false, error: 'Không thể lưu dữ liệu lên server.' });
         }
+      }
+
+      return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+    }
+
+    // Admin User Management APIs
+    if (pathname === '/api/admin/users' && req.method === 'GET') {
+      const auth = requireAdmin(req, res);
+      if (!auth) return;
+
+      const urlObj = new URL(req.url || pathname, 'http://127.0.0.1');
+      const reqDays = Number(urlObj.searchParams.get('days')) || 14;
+      const days = [7, 14, 30].includes(reqDays) ? reqDays : 14;
+
+      const now = Date.now();
+      const rawUsers = store.listUsersWithStats();
+
+      const mappedUsers = rawUsers.map(u => {
+        const isOnline = !u.isBanned && u.lastSeenAt > 0 && (now - u.lastSeenAt) <= ONLINE_WINDOW_MS;
+        return {
+          id: u.id,
+          username: u.username,
+          displayName: u.displayName || u.username,
+          role: u.role === 'admin' ? 'admin' : 'user',
+          isRootAdmin: isRootAdminUser(u),
+          isBanned: Boolean(u.isBanned),
+          bannedReason: u.bannedReason || '',
+          createdAt: u.createdAt,
+          lastLoginAt: u.lastLoginAt,
+          lastSeenAt: u.lastSeenAt || 0,
+          isOnline,
+          activeSessionCount: u.activeSessionCount || 0,
+          boardCount: u.boardCount || 0,
+          taskCount: u.taskCount || 0,
+          scheduleUpdatedAt: u.scheduleUpdatedAt || null,
+          aiKey: {
+            hasKey: Boolean(u.aiKeyEnc),
+            provider: u.aiProvider || '',
+            model: u.aiModel || '',
+            endpoint: u.aiEndpoint || '',
+            masked: u.aiKeyMask || '',
+            updatedAt: u.aiUpdatedAt || 0
+          }
+        };
+      });
+
+      // Build daily participant growth & activity chart series
+      const dayBuckets = [];
+      const baseDate = new Date();
+      baseDate.setHours(0, 0, 0, 0);
+      for (let offset = days - 1; offset >= 0; offset--) {
+        const d = new Date(baseDate.getTime() - offset * 24 * 60 * 60 * 1000);
+        const key = formatLocalDayStr(d);
+        const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        dayBuckets.push({ date: key, label, signups: 0, active: 0, cumulative: 0 });
+      }
+      const firstDayKey = dayBuckets[0].date;
+      const bucketByKey = new Map(dayBuckets.map(b => [b.date, b]));
+      let priorSignups = 0;
+
+      for (const u of mappedUsers) {
+        const createdDay = formatLocalDayStr(u.createdAt);
+        if (createdDay && createdDay < firstDayKey) {
+          priorSignups += 1;
+        } else if (createdDay && bucketByKey.has(createdDay)) {
+          bucketByKey.get(createdDay).signups += 1;
+        }
+
+        const activeDay = formatLocalDayStr(u.lastSeenAt || u.lastLoginAt);
+        if (activeDay && bucketByKey.has(activeDay)) {
+          bucketByKey.get(activeDay).active += 1;
+        }
+      }
+
+      let runningTotal = priorSignups;
+      for (const b of dayBuckets) {
+        runningTotal += b.signups;
+        b.cumulative = runningTotal;
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        serverTime: now,
+        onlineWindowSec: Math.round(ONLINE_WINDOW_MS / 1000),
+        summary: {
+          totalUsers: mappedUsers.length,
+          onlineCount: mappedUsers.filter(u => u.isOnline).length,
+          adminCount: mappedUsers.filter(u => u.role === 'admin').length,
+          bannedCount: mappedUsers.filter(u => u.isBanned).length,
+          apiKeyCount: mappedUsers.filter(u => u.aiKey.hasKey).length
+        },
+        chart: {
+          days,
+          series: dayBuckets
+        },
+        users: mappedUsers
+      });
+    }
+
+    const adminRoleMatch = pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/role$/);
+    if (adminRoleMatch && (req.method === 'PATCH' || req.method === 'PUT' || req.method === 'POST')) {
+      const auth = requireAdmin(req, res);
+      if (!auth) return;
+
+      const targetId = adminRoleMatch[1];
+      const target = store.findUserById(targetId);
+      if (!target) {
+        return sendJson(res, 404, { ok: false, error: 'Không tìm thấy người dùng.' });
+      }
+      try {
+        const body = await readBodyJson(req, 32 * 1024);
+        const nextRole = body.role === 'admin' ? 'admin' : (body.role === 'user' ? 'user' : '');
+        if (!nextRole) {
+          return sendJson(res, 400, { ok: false, error: 'Vai trò không hợp lệ (chỉ nhận admin hoặc user).' });
+        }
+        if (target.id === auth.user.id && nextRole !== 'admin') {
+          return sendJson(res, 400, { ok: false, error: 'Không thể tự hạ quyền Admin của chính bạn.' });
+        }
+        if (isRootAdminUser(target) && nextRole !== 'admin') {
+          return sendJson(res, 400, { ok: false, error: `Không thể hạ quyền tài khoản Admin gốc ${target.username}.` });
+        }
+
+        const updated = store.updateUserRole(target.id, nextRole);
+        return sendJson(res, 200, { ok: true, user: serializePublicUser(updated) });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: 'Không thể cập nhật quyền.' });
+      }
+    }
+
+    const adminBanMatch = pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/ban$/);
+    if (adminBanMatch && (req.method === 'PATCH' || req.method === 'PUT' || req.method === 'POST')) {
+      const auth = requireAdmin(req, res);
+      if (!auth) return;
+
+      const targetId = adminBanMatch[1];
+      const target = store.findUserById(targetId);
+      if (!target) {
+        return sendJson(res, 404, { ok: false, error: 'Không tìm thấy người dùng.' });
+      }
+      try {
+        const body = await readBodyJson(req, 32 * 1024);
+        const shouldBan = Boolean(body.banned);
+        if (shouldBan && target.id === auth.user.id) {
+          return sendJson(res, 400, { ok: false, error: 'Không thể tự khóa tài khoản của chính bạn.' });
+        }
+        if (shouldBan && isRootAdminUser(target)) {
+          return sendJson(res, 400, { ok: false, error: `Không thể khóa tài khoản Admin gốc ${target.username}.` });
+        }
+
+        const reason = shouldBan
+          ? (String(body.reason || '').trim() || 'Vi phạm quy định hoặc bị Admin tạm khóa.')
+          : '';
+        const updated = store.setUserBanned(target.id, shouldBan, reason);
+        return sendJson(res, 200, { ok: true, user: serializePublicUser(updated) });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: 'Không thể cập nhật trạng thái khóa.' });
+      }
+    }
+
+    const adminAiKeyMatch = pathname.match(/^\/api\/admin\/users\/([a-zA-Z0-9_-]+)\/ai-key$/);
+    if (adminAiKeyMatch) {
+      const auth = requireAdmin(req, res);
+      if (!auth) return;
+
+      const targetId = adminAiKeyMatch[1];
+      const target = store.findUserById(targetId);
+      if (!target) {
+        return sendJson(res, 404, { ok: false, error: 'Không tìm thấy người dùng.' });
+      }
+
+      if (req.method === 'GET') {
+        const decrypted = decryptVaultText(vaultKey, target.aiKeyEnc);
+        return sendJson(res, 200, {
+          ok: true,
+          userId: target.id,
+          username: target.username,
+          displayName: target.displayName || target.username,
+          provider: target.aiProvider || '',
+          model: target.aiModel || '',
+          endpoint: target.aiEndpoint || '',
+          masked: target.aiKeyMask || '',
+          apiKey: decrypted,
+          updatedAt: target.aiUpdatedAt || 0
+        });
+      }
+
+      if (req.method === 'PUT' || req.method === 'POST') {
+        try {
+          const body = await readBodyJson(req, 64 * 1024);
+          const provider = String(body.provider || target.aiProvider || 'gemini').trim().slice(0, 32);
+          const model = String(body.model || target.aiModel || '').trim().slice(0, 100);
+          const endpoint = String(body.endpoint || target.aiEndpoint || '').trim().slice(0, 300);
+          const rawKey = String(body.apiKey || '').trim();
+          if (!rawKey) {
+            return sendJson(res, 400, { ok: false, error: 'Vui lòng nhập API Key hợp lệ (hoặc dùng nút Xóa Key).' });
+          }
+
+          const updated = store.updateUserAiConfig(target.id, {
+            provider,
+            model,
+            endpoint,
+            keyEnc: encryptVaultText(vaultKey, rawKey),
+            keyMask: maskApiKey(rawKey),
+            updatedAt: Date.now()
+          });
+          return sendJson(res, 200, {
+            ok: true,
+            aiKey: {
+              hasKey: Boolean(updated.aiKeyEnc),
+              provider: updated.aiProvider,
+              model: updated.aiModel,
+              endpoint: updated.aiEndpoint,
+              masked: updated.aiKeyMask,
+              updatedAt: updated.aiUpdatedAt
+            }
+          });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: 'Không thể lưu API Key.' });
+        }
+      }
+
+      if (req.method === 'DELETE') {
+        store.updateUserAiConfig(target.id, {
+          provider: target.aiProvider || '',
+          model: target.aiModel || '',
+          endpoint: target.aiEndpoint || '',
+          keyEnc: '',
+          keyMask: '',
+          updatedAt: Date.now()
+        });
+        return sendJson(res, 200, { ok: true });
       }
 
       return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });

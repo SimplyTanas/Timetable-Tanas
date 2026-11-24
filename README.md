@@ -29,10 +29,15 @@
 | `/api/auth/login` | `POST` | Đăng nhập & cấp `HttpOnly` cookie (`rememberMe = true` -> 30 ngày) |
 | `/api/auth/logout` | `POST` | Xóa phiên hiện tại trên server & xóa cookie |
 | `/api/auth/me` | `GET` | Kiểm tra phiên đăng nhập & thống kê lưu trữ DB |
+| `/api/auth/ping` | `POST` | Cập nhật heartbeat trạng thái Online/Offline |
 | `/api/auth/profile` | `PUT` / `PATCH` | Cập nhật tên hiển thị hoặc đổi mật khẩu |
-| `/api/schedule` | `GET` / `PUT` | Tải / lưu lịch, bố cục (`columns`/`grid`) và tùy chọn Studio |
+| `/api/schedule` | `GET` / `PUT` | Tải / lưu lịch, bố cục (`columns`/`grid`), tùy chọn Studio & AI key (mã hóa AES-256-GCM) |
+| `/api/admin/users` | `GET` | *(Admin)* Thống kê thành viên, Online/Offline, biểu đồ tham gia & API key AI |
+| `/api/admin/users/:id/role` | `PATCH` | *(Admin)* Cấp / thu hồi quyền Admin |
+| `/api/admin/users/:id/ban` | `PATCH` | *(Admin)* Khóa / gỡ khóa tài khoản và ngắt phiên tức thì |
+| `/api/admin/users/:id/ai-key` | `GET` / `PUT` / `DELETE` | *(Admin)* Xem / gán / xóa AI API key của tài khoản |
 
-Mật khẩu được băm bằng `crypto.scryptSync` (salt ngẫu nhiên 16 byte), session token được băm `SHA-256` trước khi lưu trong SQLite (`./data/tanas.db`).
+Mật khẩu được băm bằng `crypto.scryptSync` (salt ngẫu nhiên 16 byte), session token được băm `SHA-256` trước khi lưu trong SQLite (`./data/tanas.db`), và AI API key trên server được mã hóa AES-256-GCM bằng khóa cục bộ trong `DATA_DIR` (được loại trừ khỏi Git qua `.gitignore`). Tài khoản admin khởi tạo được cấu hình hoàn toàn qua biến môi trường cục bộ `TANAS_ADMIN_USER` và `TANAS_ADMIN_PASSWORD` (không lưu mật khẩu hay mã băm mặc định trong mã nguồn Git).
 
 ---
 
