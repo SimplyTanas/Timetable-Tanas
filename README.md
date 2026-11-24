@@ -9,7 +9,7 @@
 - **Đăng nhập / Đăng ký tài khoản & Ghi nhớ 30 ngày**:
   - Hỗ trợ tạo tài khoản và đăng nhập trực tiếp trên trình duyệt qua REST API.
   - Checkbox **"Ghi nhớ đăng nhập trong 30 ngày"** duy trì phiên an toàn bằng cookie `HttpOnly` + lưu phiên dài hạn phía server (`30 ngày`).
-  - Mỗi tài khoản có vùng lưu lịch riêng (`data/schedules/<userId>.json`), tự động đồng bộ khi thêm/sửa/hoàn thành việc hoặc đổi chế độ Sáng/Tối.
+  - Mỗi tài khoản có vùng lưu riêng trong SQLite (`data/tanas.db` qua `node:sqlite`, tự fallback sang JSON trên Node cũ), tự động đồng bộ bảng, công việc, bố cục, giao diện Sáng/Tối, chuỗi streak và tùy chọn Studio (không lưu API key bên thứ ba lên server).
   - Hỗ trợ chế độ Khách / Offline khi mở trực tiếp file hoặc chưa cần tạo tài khoản.
 - **Bộ icon vẽ tay Sketchy SVG & Sticker minh họa**:
   - Toàn bộ icon giao diện dùng vector nét bút vẽ tay (`sketchy.js`), tự thích nghi Sáng/Tối kèm hình minh họa thỏ vẽ tay cho bảng trống.
@@ -28,20 +28,21 @@
 | `/api/auth/register` | `POST` | Đăng ký tài khoản (`username`, `password`, `displayName`, `rememberMe`) |
 | `/api/auth/login` | `POST` | Đăng nhập & cấp `HttpOnly` cookie (`rememberMe = true` -> 30 ngày) |
 | `/api/auth/logout` | `POST` | Xóa phiên hiện tại trên server & xóa cookie |
-| `/api/auth/me` | `GET` | Kiểm tra phiên đăng nhập hiện tại |
-| `/api/schedule` | `GET` / `PUT` | Tải / lưu lịch cá nhân của người dùng đang đăng nhập |
+| `/api/auth/me` | `GET` | Kiểm tra phiên đăng nhập & thống kê lưu trữ DB |
+| `/api/auth/profile` | `PUT` / `PATCH` | Cập nhật tên hiển thị hoặc đổi mật khẩu |
+| `/api/schedule` | `GET` / `PUT` | Tải / lưu lịch, bố cục (`columns`/`grid`) và tùy chọn Studio |
 
-Mật khẩu được băm bằng `crypto.scryptSync` (salt ngẫu nhiên 16 byte), session token được băm `SHA-256` trước khi lưu xuống `./data/sessions.json`.
+Mật khẩu được băm bằng `crypto.scryptSync` (salt ngẫu nhiên 16 byte), session token được băm `SHA-256` trước khi lưu trong SQLite (`./data/tanas.db`).
 
 ---
 
 ## Cách chạy
 
 ### 1. Chạy cục bộ trên Windows
-Nhấp đúp chuột vào **[Mo-Thoi-Gian-Bieu.bat](Mo-Thoi-Gian-Bieu.bat)** (tự khởi chạy `node server.js` ở `http://127.0.0.1:58123`).
+Nhấp đúp chuột vào **[Mo-Thoi-Gian-Bieu.bat](Mo-Thoi-Gian-Bieu.bat)** (tự khởi chạy `node --no-warnings server.js` ở `http://127.0.0.1:58123`).
 
 ### 2. Chạy trên Server / VPS / Cloud (Render, Railway, Fly.io...)
-Ứng dụng dùng **100% Node.js thuần (>= 18)**, không cần cài thư viện ngoài (`dependencies: {}`):
+Ứng dụng dùng **100% Node.js thuần** (`node:sqlite` có sẵn từ Node 22.5+, fallback JSON an toàn trên Node >= 18), không cần `npm install` gói ngoài (`dependencies: {}`). Đã kèm sẵn [render.yaml](render.yaml) với Persistent Disk mount tại `/opt/render/project/src/data`:
 
 ```bash
 npm start
@@ -50,7 +51,7 @@ npm start
 Biến môi trường hỗ trợ (xem `.env.example`):
 - `PORT`: Cổng lắng nghe (mặc định `58123`; tự động bind `0.0.0.0` khi biến `PORT` được cấp trên cloud).
 - `HOST`: Địa chỉ bind tùy chỉnh.
-- `DATA_DIR`: Thư mục lưu `users.json`, `sessions.json` và lịch từng tài khoản (mặc định `./data`).
+- `DATA_DIR`: Thư mục chứa SQLite `tanas.db` và dữ liệu máy chủ (mặc định `./data`).
 - `COOKIE_SECURE=1`: Bật ép cờ `Secure` cho cookie khi triển khai HTTPS (tự động bật nếu có header `X-Forwarded-Proto: https`).
 
 ### 3. Chạy bằng Docker

@@ -12,6 +12,8 @@
   let currentUser = null;
   let currentRememberMe = true;
   let currentExpiresAt = null;
+  let currentStorageStats = null;
+  let currentLastSyncAt = null;
   let activeAuthMode = 'login'; // 'login' | 'register'
   let syncQueueTimer = null;
 
@@ -25,7 +27,7 @@
       : '';
   }
 
-  function formatExpiryDate(ms) {
+  function formatDateTime(ms) {
     if (!ms) return '';
     try {
       const d = new Date(Number(ms));
@@ -41,8 +43,8 @@
     }
   }
 
-  function setAuthError(msg) {
-    const box = document.getElementById('auth-error-box');
+  function setNoticeBox(boxId, msg) {
+    const box = document.getElementById(boxId);
     if (!box) return;
     if (!msg) {
       box.textContent = '';
@@ -50,6 +52,22 @@
     } else {
       box.textContent = msg;
       box.classList.remove('hidden');
+    }
+  }
+
+  function setAuthError(msg) {
+    setNoticeBox('auth-error-box', msg);
+  }
+
+  function setSessionState(data) {
+    currentUser = data?.user || null;
+    currentRememberMe = Boolean(data?.rememberMe);
+    currentExpiresAt = data?.expiresAt || null;
+    if (data?.storage) {
+      currentStorageStats = data.storage;
+      if (data.storage.updatedAt) {
+        currentLastSyncAt = data.storage.updatedAt;
+      }
     }
   }
 
@@ -168,8 +186,31 @@
       }
       if (expiryEl) {
         expiryEl.textContent = currentExpiresAt
-          ? `Hết hạn phiên: ${formatExpiryDate(currentExpiresAt)}`
+          ? `Hết hạn phiên: ${formatDateTime(currentExpiresAt)}`
           : 'Đang hoạt động';
+      }
+
+      const engineEl = document.getElementById('auth-storage-engine');
+      const summaryEl = document.getElementById('auth-storage-summary');
+      const syncEl = document.getElementById('auth-storage-sync');
+      const localState = window.ScheduleAPI?.getState?.();
+      const boardsCount = currentStorageStats?.boardCount ?? localState?.boards?.length ?? 0;
+      const tasksCount = currentStorageStats?.taskCount ?? localState?.tasks?.length ?? 0;
+
+      if (engineEl) {
+        engineEl.textContent = currentStorageStats?.engine || 'sqlite (data/tanas.db)';
+      }
+      if (summaryEl) {
+        summaryEl.textContent = `${boardsCount} bảng • ${tasksCount} công việc`;
+      }
+      if (syncEl) {
+        const ts = currentLastSyncAt || currentStorageStats?.updatedAt;
+        syncEl.textContent = ts ? `Đã lưu: ${formatDateTime(ts)}` : 'Chưa lưu trên server';
+      }
+
+      const profileNameInput = document.getElementById('profile-display-name');
+      if (profileNameInput && !profileNameInput.matches(':focus')) {
+        profileNameInput.value = currentUser.displayName || currentUser.username;
       }
     } else {
       offlineNotice?.classList.add('hidden');
@@ -223,12 +264,25 @@
       const res = await fetch('/api/schedule', { cache: 'no-store', credentials: 'same-origin' });
       if (!res.ok) return;
       const body = await res.json();
+      if (body && body.storage) {
+        currentStorageStats = body.storage;
+      }
       if (body && body.exists && body.data && Array.isArray(body.data.boards) && Array.isArray(body.data.tasks)) {
-        window.ScheduleAPI.applyRemoteSchedule(body.data);
+        window.ScheduleAPI.applyRemoteSchedule(body.data, currentUser.id);
+        currentLastSyncAt = body.data.updatedAt || body.storage?.updatedAt || Date.now();
       } else {
-        // Brand-new account or empty server schedule: upload current schedule if user has custom tasks
+        // Brand-new account: only upload guest schedule; never leak previous user's stale local storage
+        const eligible = window.ScheduleAPI.isGuestDataEligibleForUpload
+          ? window.ScheduleAPI.isGuestDataEligibleForUpload(currentUser.id)
+          : true;
+        if (!eligible && window.ScheduleAPI.resetToDefaultView) {
+          window.ScheduleAPI.resetToDefaultView(currentUser.id);
+        } else {
+          window.ScheduleAPI.setDataOwner?.(currentUser.id);
+        }
         await syncNowToServer(true);
       }
+      renderAuthModalView();
     } catch (_) {}
   }
 
@@ -243,6 +297,17 @@
         body: JSON.stringify(payload)
       });
       if (!res.ok) return false;
+      const body = await res.json().catch(() => null);
+      if (body && body.storage) {
+        currentStorageStats = body.storage;
+      }
+      currentLastSyncAt = (body && body.updatedAt) || Date.now();
+      localStorage.setItem('schedule_last_saved_at', String(currentLastSyncAt));
+      window.ScheduleAPI.setDataOwner?.(currentUser.id);
+      const modal = document.getElementById('modal-auth');
+      if (modal && !modal.classList.contains('hidden')) {
+        renderAuthModalView();
+      }
       if (!silent) {
         window.ScheduleAPI.showToast('Đã đồng bộ lịch lên máy chủ thành công!');
       }
@@ -298,9 +363,9 @@
         return;
       }
 
-      currentUser = data.user;
-      currentRememberMe = Boolean(data.rememberMe);
-      currentExpiresAt = data.expiresAt || null;
+      setSessionState(data);
+      const passInput = document.getElementById('auth-password');
+      if (passInput) passInput.value = '';
       sessionStorage.removeItem(GUEST_FLAG_KEY);
       updateHeaderAuthUI();
       await pullOrPushScheduleAfterAuth();
@@ -317,7 +382,65 @@
     }
   }
 
+  async function handleProfileSubmit(e) {
+    e.preventDefault();
+    setNoticeBox('profile-error-box', '');
+    if (!isBackendAvailable() || !currentUser) return;
+
+    const displayName = document.getElementById('profile-display-name')?.value.trim() || '';
+    const currentPassword = document.getElementById('profile-current-pass')?.value || '';
+    const newPassword = document.getElementById('profile-new-pass')?.value || '';
+
+    if (!displayName) {
+      setNoticeBox('profile-error-box', 'Tên hiển thị không được để trống.');
+      return;
+    }
+    if (newPassword && !currentPassword) {
+      setNoticeBox('profile-error-box', 'Vui lòng nhập mật khẩu cũ để đổi mật khẩu.');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btn-profile-save');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Đang lưu...';
+    }
+
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ displayName, currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.user) {
+        setNoticeBox('profile-error-box', data.error || 'Không thể cập nhật hồ sơ.');
+        return;
+      }
+
+      currentUser = data.user;
+      const curPassEl = document.getElementById('profile-current-pass');
+      const newPassEl = document.getElementById('profile-new-pass');
+      if (curPassEl) curPassEl.value = '';
+      if (newPassEl) newPassEl.value = '';
+      document.getElementById('form-auth-profile')?.classList.add('hidden');
+      updateHeaderAuthUI();
+      renderAuthModalView();
+      window.ScheduleAPI?.showToast('Đã cập nhật hồ sơ tài khoản trên máy chủ!');
+    } catch (_) {
+      setNoticeBox('profile-error-box', 'Lỗi kết nối máy chủ khi lưu hồ sơ.');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Lưu lên Server';
+      }
+    }
+  }
+
   async function handleLogout() {
+    clearTimeout(syncQueueTimer);
+    syncQueueTimer = null;
     if (isBackendAvailable()) {
       try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
@@ -326,9 +449,13 @@
     currentUser = null;
     currentRememberMe = false;
     currentExpiresAt = null;
+    currentStorageStats = null;
+    currentLastSyncAt = null;
+    document.getElementById('form-auth-profile')?.classList.add('hidden');
+    window.ScheduleAPI?.resetToDefaultView?.('guest');
     updateHeaderAuthUI();
     renderAuthModalView();
-    window.ScheduleAPI?.showToast('Đã đăng xuất khỏi tài khoản.');
+    window.ScheduleAPI?.showToast('Đã đăng xuất và dọn dữ liệu riêng tư khỏi trình duyệt.');
   }
 
   async function checkInitialSession() {
@@ -340,9 +467,7 @@
       if (!res.ok) return;
       const data = await res.json();
       if (data && data.authenticated && data.user) {
-        currentUser = data.user;
-        currentRememberMe = Boolean(data.rememberMe);
-        currentExpiresAt = data.expiresAt || null;
+        setSessionState(data);
         updateHeaderAuthUI();
         await pullOrPushScheduleAfterAuth();
       } else if (sessionStorage.getItem(GUEST_FLAG_KEY) !== '1') {
@@ -361,6 +486,22 @@
     document.getElementById('tab-auth-login')?.addEventListener('click', () => switchAuthTab('login'));
     document.getElementById('tab-auth-register')?.addEventListener('click', () => switchAuthTab('register'));
     document.getElementById('form-auth')?.addEventListener('submit', handleAuthSubmit);
+
+    document.getElementById('btn-toggle-profile-edit')?.addEventListener('click', () => {
+      const form = document.getElementById('form-auth-profile');
+      if (!form) return;
+      form.classList.toggle('hidden');
+      setNoticeBox('profile-error-box', '');
+      if (!form.classList.contains('hidden') && currentUser) {
+        const input = document.getElementById('profile-display-name');
+        if (input) input.value = currentUser.displayName || currentUser.username;
+      }
+    });
+    document.getElementById('btn-cancel-profile-edit')?.addEventListener('click', () => {
+      document.getElementById('form-auth-profile')?.classList.add('hidden');
+      setNoticeBox('profile-error-box', '');
+    });
+    document.getElementById('form-auth-profile')?.addEventListener('submit', handleProfileSubmit);
 
     document.getElementById('btn-toggle-auth-pass')?.addEventListener('click', () => {
       const passInput = document.getElementById('auth-password');

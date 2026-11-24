@@ -250,8 +250,10 @@ const LS_KEYS = {
   TASKS: 'schedule_app_tasks_cute_v2',
   THEME: 'schedule_app_theme_cute_v2',
   MODE: 'schedule_app_mode_cute_v2',
+  LAYOUT: 'schedule_app_layout_v1',
   STREAK: 'schedule_app_streak_v1',
-  NOTIF: 'schedule_app_notif_v1'
+  NOTIF: 'schedule_app_notif_v1',
+  DATA_OWNER: 'tanas_data_owner_id'
 };
 
 const TAPE_CLASSES = ['pink', 'mint', 'blue', 'purple', 'yellow'];
@@ -572,27 +574,7 @@ async function syncWithLocalDisk() {
     if (body && body.exists && body.data && Array.isArray(body.data.boards) && Array.isArray(body.data.tasks)) {
       const diskTs = Number(body.data.updatedAt || 0);
       if (isUsingDefaultSampleOnly() || diskTs > localTs) {
-        state.boards = body.data.boards;
-        state.tasks = body.data.tasks;
-        if (body.data.deviceMode) state.deviceMode = body.data.deviceMode;
-        if (body.data.theme) {
-          localStorage.setItem(LS_KEYS.THEME, body.data.theme);
-          applySavedTheme();
-        }
-        if (body.data.streak) {
-          localStorage.setItem(LS_KEYS.STREAK, JSON.stringify(body.data.streak));
-        }
-        cleanLegacyLabels();
-        localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
-        localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
-        localStorage.setItem(LS_KEYS.MODE, state.deviceMode);
-        localStorage.setItem('schedule_last_saved_at', String(diskTs || Date.now()));
-        localStorage.setItem('schedule_sync_banner_dismissed', '1');
-        if (state.boards.length > 0 && !state.boards.some(b => b.id === state.activeMobileBoardId)) {
-          state.activeMobileBoardId = state.boards[0].id;
-        }
-        renderAll();
-        setupMigrationBanner();
+        window.ScheduleAPI?.applyRemoteSchedule(body.data, 'guest');
       }
     } else if (!isUsingDefaultSampleOnly()) {
       persistToLocalDiskImmediate();
@@ -685,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   setupEventListeners();
   applySavedTheme();
+  applyLayoutUI();
   renderAll();
   hydrateSketchy(document);
   setupMigrationBanner();
@@ -746,9 +729,10 @@ function loadData() {
   const savedBoards = localStorage.getItem(LS_KEYS.BOARDS);
   const savedTasks = localStorage.getItem(LS_KEYS.TASKS);
   const savedMode = localStorage.getItem(LS_KEYS.MODE);
+  const savedLayout = localStorage.getItem(LS_KEYS.LAYOUT);
 
-  state.boards = savedBoards ? JSON.parse(savedBoards) : [...DEFAULT_BOARDS];
-  state.tasks = savedTasks ? JSON.parse(savedTasks) : [...DEFAULT_TASKS];
+  state.boards = savedBoards ? JSON.parse(savedBoards) : JSON.parse(JSON.stringify(DEFAULT_BOARDS));
+  state.tasks = savedTasks ? JSON.parse(savedTasks) : JSON.parse(JSON.stringify(DEFAULT_TASKS));
 
   if (cleanLegacyLabels()) {
     localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
@@ -756,6 +740,7 @@ function loadData() {
   }
 
   if (savedMode) state.deviceMode = savedMode;
+  if (savedLayout === 'grid' || savedLayout === 'columns') state.layout = savedLayout;
   if (state.boards.length > 0) {
     state.activeMobileBoardId = state.boards[0].id;
   }
@@ -765,12 +750,35 @@ function saveData() {
   localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
   localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
   localStorage.setItem(LS_KEYS.MODE, state.deviceMode);
+  localStorage.setItem(LS_KEYS.LAYOUT, state.layout);
   localStorage.setItem('schedule_last_saved_at', String(Date.now()));
   if (window.TanasAuth && typeof window.TanasAuth.isLoggedIn === 'function' && window.TanasAuth.isLoggedIn()) {
+    const uid = window.TanasAuth.getUser?.()?.id;
+    if (uid) localStorage.setItem(LS_KEYS.DATA_OWNER, String(uid));
     window.TanasAuth.queueRemoteSave();
   } else {
+    if (!localStorage.getItem(LS_KEYS.DATA_OWNER)) {
+      localStorage.setItem(LS_KEYS.DATA_OWNER, 'guest');
+    }
     scheduleDiskSave();
   }
+}
+
+function applyLayoutUI(layout = state.layout) {
+  state.layout = layout === 'grid' ? 'grid' : 'columns';
+  localStorage.setItem(LS_KEYS.LAYOUT, state.layout);
+  const btnCol = document.getElementById('btn-layout-columns');
+  const btnGrid = document.getElementById('btn-layout-grid');
+  const setBtn = (btn, active) => {
+    if (!btn) return;
+    btn.classList.toggle('bg-pink-200', active);
+    btn.classList.toggle('text-stone-900', active);
+    btn.classList.toggle('border', active);
+    btn.classList.toggle('border-stone-800', active);
+    btn.classList.toggle('text-stone-500', !active);
+  };
+  setBtn(btnCol, state.layout === 'columns');
+  setBtn(btnGrid, state.layout === 'grid');
 }
 
 // --- DOM Rendering ---
@@ -1936,21 +1944,15 @@ function setupEventListeners() {
   const btnCol = document.getElementById('btn-layout-columns');
   const btnGrid = document.getElementById('btn-layout-grid');
 
-  btnCol.addEventListener('click', () => {
-    state.layout = 'columns';
-    btnCol.classList.add('bg-pink-200', 'text-stone-900', 'border', 'border-stone-800');
-    btnCol.classList.remove('text-stone-500');
-    btnGrid.classList.remove('bg-pink-200', 'text-stone-900', 'border', 'border-stone-800');
-    btnGrid.classList.add('text-stone-500');
+  btnCol?.addEventListener('click', () => {
+    applyLayoutUI('columns');
+    saveData();
     renderBoards();
   });
 
-  btnGrid.addEventListener('click', () => {
-    state.layout = 'grid';
-    btnGrid.classList.add('bg-pink-200', 'text-stone-900', 'border', 'border-stone-800');
-    btnGrid.classList.remove('text-stone-500');
-    btnCol.classList.remove('bg-pink-200', 'text-stone-900', 'border', 'border-stone-800');
-    btnCol.classList.add('text-stone-500');
+  btnGrid?.addEventListener('click', () => {
+    applyLayoutUI('grid');
+    saveData();
     renderBoards();
   });
 
@@ -2679,28 +2681,39 @@ window.ScheduleAPI = {
     boards: state.boards,
     tasks: state.tasks,
     deviceMode: state.deviceMode,
+    layout: state.layout,
     theme: localStorage.getItem(LS_KEYS.THEME) || 'light',
     streak: (() => {
       try { return JSON.parse(localStorage.getItem(LS_KEYS.STREAK) || 'null'); } catch (_) { return null; }
     })(),
+    preferences: window.StudioModules?.getPreferences ? window.StudioModules.getPreferences() : {},
     updatedAt: Number(localStorage.getItem('schedule_last_saved_at') || Date.now())
   }),
-  applyRemoteSchedule: (data) => {
+  applyRemoteSchedule: (data, ownerId = null) => {
     if (!data || !Array.isArray(data.boards) || !Array.isArray(data.tasks)) return false;
     state.boards = data.boards;
     state.tasks = data.tasks;
     if (data.deviceMode) state.deviceMode = data.deviceMode;
+    applyLayoutUI(data.layout || 'columns');
     if (data.theme) {
       localStorage.setItem(LS_KEYS.THEME, data.theme);
       applySavedTheme();
     }
     if (data.streak) {
       localStorage.setItem(LS_KEYS.STREAK, JSON.stringify(data.streak));
+    } else {
+      localStorage.removeItem(LS_KEYS.STREAK);
+    }
+    if (data.preferences && window.StudioModules?.applyPreferences) {
+      window.StudioModules.applyPreferences(data.preferences);
     }
     cleanLegacyLabels();
     localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
     localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
     localStorage.setItem(LS_KEYS.MODE, state.deviceMode);
+    if (ownerId) {
+      localStorage.setItem(LS_KEYS.DATA_OWNER, String(ownerId));
+    }
     localStorage.setItem('schedule_last_saved_at', String(data.updatedAt || Date.now()));
     localStorage.setItem('schedule_sync_banner_dismissed', '1');
     if (state.boards.length > 0 && !state.boards.some(b => b.id === state.activeMobileBoardId)) {
@@ -2709,6 +2722,41 @@ window.ScheduleAPI = {
     renderAll();
     setupMigrationBanner();
     return true;
+  },
+  isGuestDataEligibleForUpload: (targetUserId) => {
+    const owner = localStorage.getItem(LS_KEYS.DATA_OWNER);
+    return !owner || owner === 'guest' || (targetUserId && owner === String(targetUserId));
+  },
+  setDataOwner: (ownerId) => {
+    if (ownerId) localStorage.setItem(LS_KEYS.DATA_OWNER, String(ownerId));
+    else localStorage.removeItem(LS_KEYS.DATA_OWNER);
+  },
+  resetToDefaultView: (ownerId = 'guest') => {
+    state.boards = JSON.parse(JSON.stringify(DEFAULT_BOARDS));
+    state.tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    state.deviceMode = 'desktop';
+    state.filterStatus = 'all';
+    state.searchQuery = '';
+    state.activeMobileBoardId = state.boards[0]?.id || null;
+    localStorage.removeItem(LS_KEYS.BOARDS);
+    localStorage.removeItem(LS_KEYS.TASKS);
+    localStorage.removeItem(LS_KEYS.MODE);
+    localStorage.removeItem(LS_KEYS.STREAK);
+    localStorage.removeItem(LS_KEYS.LAYOUT);
+    localStorage.removeItem('schedule_last_saved_at');
+    if (ownerId) localStorage.setItem(LS_KEYS.DATA_OWNER, String(ownerId));
+    else localStorage.removeItem(LS_KEYS.DATA_OWNER);
+    applyLayoutUI('columns');
+    if (window.StudioModules?.applyPreferences) {
+      window.StudioModules.applyPreferences({
+        notificationsEnabled: false,
+        ambientPreset: 'lofi',
+        musicVolume: 45,
+        pomoMinutes: 25
+      });
+    }
+    renderAll();
+    setupMigrationBanner();
   },
   getCurrentTimeInfo: () => {
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];

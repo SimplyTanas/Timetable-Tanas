@@ -13,7 +13,7 @@ powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 58123 -State Lis
 
 where node >nul 2>nul
 if %errorlevel%==0 (
-  powershell -NoProfile -Command "Start-Process -WindowStyle Hidden -WorkingDirectory $env:APP_DIR -FilePath 'node' -ArgumentList 'server.js'"
+  powershell -NoProfile -Command "Start-Process -WindowStyle Hidden -WorkingDirectory $env:APP_DIR -FilePath 'node' -ArgumentList '--no-warnings','server.js'"
   goto :wait_and_open
 )
 

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: timetable-tanas
+    runtime: node
+    plan: starter
+    buildCommand: echo "No external build step required"
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: tanas-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
+      - key: COOKIE_SECURE
+        value: "1"

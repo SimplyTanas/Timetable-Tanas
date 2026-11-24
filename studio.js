@@ -13,6 +13,7 @@
   const AI_STORAGE_KEY = 'schedule_app_ai_config_v1';
   const NOTIF_STORAGE_KEY = 'schedule_app_notif_v1';
   const NOTIFIED_MAP_KEY = 'schedule_app_notified_today_v1';
+  const STUDIO_PREFS_KEY = 'schedule_app_studio_prefs_v1';
 
   // --- Shared Audio Context for Chime & Offline Ambient Synth ---
   let audioCtx = null;
@@ -478,10 +479,26 @@
     updatePomoUI();
   }
 
+  function syncPomoModeButtons(minutes) {
+    const mins = Number(minutes) || 25;
+    document.querySelectorAll('.btn-pomo-mode').forEach(b => {
+      const active = Number(b.getAttribute('data-minutes')) === mins;
+      b.classList.toggle('bg-pink-200', active);
+      b.classList.toggle('text-stone-900', active);
+      b.classList.toggle('border-stone-800', active);
+      b.classList.toggle('bg-stone-100', !active);
+      b.classList.toggle('dark:bg-stone-800', !active);
+      b.classList.toggle('text-stone-700', !active);
+      b.classList.toggle('dark:text-stone-300', !active);
+      b.classList.toggle('border-stone-400', !active);
+    });
+  }
+
   function resetPomodoro(minutes = pomo.minutes) {
     stopPomodoroInterval();
     pomo.minutes = Number(minutes);
     pomo.remainingSec = pomo.minutes * 60;
+    syncPomoModeButtons(pomo.minutes);
     updatePomoUI();
   }
 
@@ -1131,6 +1148,96 @@
   }
 
   // --- Event Setup ---
+  function getPreferences() {
+    const volSlider = document.getElementById('music-volume');
+    const volume = volSlider ? Math.max(0, Math.min(100, Number(volSlider.value))) : 45;
+    return {
+      notificationsEnabled: Boolean(notificationsEnabled),
+      ambientPreset: currentAmbientPreset || 'lofi',
+      musicVolume: Number.isFinite(volume) ? volume : 45,
+      pomoMinutes: Math.max(1, Math.min(180, Number(pomo.minutes) || 25)),
+      aiProvider: aiConfig.provider === 'openai' ? 'openai' : 'gemini',
+      aiEndpoint: aiConfig.endpoint || 'https://api.openai.com/v1/chat/completions',
+      aiModel: aiConfig.model || 'gemini-3.8-flash'
+    };
+  }
+
+  function persistLocalStudioPrefs() {
+    const prefs = getPreferences();
+    try {
+      localStorage.setItem(STUDIO_PREFS_KEY, JSON.stringify({
+        ambientPreset: prefs.ambientPreset,
+        musicVolume: prefs.musicVolume,
+        pomoMinutes: prefs.pomoMinutes
+      }));
+    } catch (_) {}
+  }
+
+  function loadLocalStudioPrefs() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STUDIO_PREFS_KEY) || '{}');
+      if (saved && typeof saved === 'object') {
+        applyPreferences(saved, true);
+      }
+    } catch (_) {}
+  }
+
+  function applyPreferences(prefs, silent = false) {
+    if (!prefs || typeof prefs !== 'object') return false;
+
+    if (typeof prefs.notificationsEnabled === 'boolean') {
+      notificationsEnabled = prefs.notificationsEnabled;
+      localStorage.setItem(NOTIF_STORAGE_KEY, notificationsEnabled ? '1' : '0');
+      updateNotificationBellUI();
+    }
+
+    if (typeof prefs.ambientPreset === 'string' && ['lofi', 'rain', 'ocean', 'focus'].includes(prefs.ambientPreset)) {
+      currentAmbientPreset = prefs.ambientPreset;
+      updateAmbientUI();
+    }
+
+    if (typeof prefs.musicVolume === 'number' && Number.isFinite(prefs.musicVolume)) {
+      const vol = Math.max(0, Math.min(100, Math.round(prefs.musicVolume)));
+      const volSlider = document.getElementById('music-volume');
+      if (volSlider) volSlider.value = String(vol);
+      if (masterGain && audioCtx) {
+        masterGain.gain.setValueAtTime(vol / 100, audioCtx.currentTime);
+      }
+    }
+
+    if (typeof prefs.pomoMinutes === 'number' && Number.isFinite(prefs.pomoMinutes) && !pomo.running) {
+      const mins = Math.max(1, Math.min(180, Math.round(prefs.pomoMinutes)));
+      pomo.minutes = mins;
+      pomo.remainingSec = mins * 60;
+      syncPomoModeButtons(mins);
+      updatePomoUI();
+    }
+
+    if (prefs.aiProvider || prefs.aiModel || prefs.aiEndpoint) {
+      const provider = prefs.aiProvider === 'openai' ? 'openai' : 'gemini';
+      aiConfig = {
+        ...aiConfig,
+        provider,
+        endpoint: typeof prefs.aiEndpoint === 'string' && prefs.aiEndpoint.trim()
+          ? prefs.aiEndpoint.trim()
+          : (aiConfig.endpoint || 'https://api.openai.com/v1/chat/completions'),
+        model: typeof prefs.aiModel === 'string' && prefs.aiModel.trim()
+          ? prefs.aiModel.trim()
+          : (provider === 'openai' ? 'gpt-4o-mini' : 'gemini-3.8-flash')
+      };
+      try {
+        localStorage.setItem(AI_STORAGE_KEY, JSON.stringify(aiConfig));
+      } catch (_) {}
+      loadAIConfig();
+      renderChatMessages();
+    }
+
+    if (!silent) {
+      persistLocalStudioPrefs();
+    }
+    return true;
+  }
+
   function initStudio() {
     // Music widget controls
     const btnMusicHeader = document.getElementById('btn-toggle-music-widget');
@@ -1178,6 +1285,8 @@
     document.querySelectorAll('.btn-ambient-preset').forEach(btn => {
       btn.addEventListener('click', () => {
         startAmbientPreset(btn.getAttribute('data-preset'));
+        persistLocalStudioPrefs();
+        window.TanasAuth?.queueRemoteSave();
       });
     });
     document.getElementById('btn-ambient-toggle')?.addEventListener('click', () => {
@@ -1187,10 +1296,15 @@
         startAmbientPreset(currentAmbientPreset);
       }
     });
-    document.getElementById('music-volume')?.addEventListener('input', (e) => {
+    const volSlider = document.getElementById('music-volume');
+    volSlider?.addEventListener('input', (e) => {
       if (masterGain && audioCtx) {
         masterGain.gain.setValueAtTime(Number(e.target.value) / 100, audioCtx.currentTime);
       }
+    });
+    volSlider?.addEventListener('change', () => {
+      persistLocalStudioPrefs();
+      window.TanasAuth?.queueRemoteSave();
     });
 
     // Pomodoro widget controls
@@ -1204,13 +1318,9 @@
     document.querySelectorAll('.btn-pomo-mode').forEach(btn => {
       btn.addEventListener('click', () => {
         const mins = Number(btn.getAttribute('data-minutes')) || 25;
-        document.querySelectorAll('.btn-pomo-mode').forEach(b => {
-          b.classList.remove('bg-pink-200', 'text-stone-900', 'border-stone-800');
-          b.classList.add('bg-stone-100', 'dark:bg-stone-800', 'text-stone-700', 'dark:text-stone-300', 'border-stone-400');
-        });
-        btn.classList.add('bg-pink-200', 'text-stone-900', 'border-stone-800');
-        btn.classList.remove('bg-stone-100', 'dark:bg-stone-800', 'text-stone-700', 'dark:text-stone-300', 'border-stone-400');
         resetPomodoro(mins);
+        persistLocalStudioPrefs();
+        window.TanasAuth?.queueRemoteSave();
       });
     });
     document.getElementById('btn-pomo-toggle')?.addEventListener('click', () => {
@@ -1242,6 +1352,7 @@
         window.ScheduleAPI?.showToast('Đã tắt thông báo nhắc lịch.');
       }
       updateNotificationBellUI();
+      window.TanasAuth?.queueRemoteSave();
     });
 
     // AI Assistant controls
@@ -1291,6 +1402,7 @@
       updateAIBadge();
       document.getElementById('ai-settings-panel')?.classList.add('hidden');
       renderChatMessages();
+      window.TanasAuth?.queueRemoteSave();
       window.ScheduleAPI?.showToast('Đã lưu cài đặt API Trợ Lý AI!');
     });
 
@@ -1311,6 +1423,7 @@
     });
 
     loadAIConfig();
+    loadLocalStudioPrefs();
     renderChatMessages();
     setupDraggableWindows();
     setupHorizontalDragScroll();
@@ -1461,7 +1574,9 @@
     startPomodoro,
     pausePomodoro,
     resetPomodoro,
-    playGentleChime
+    playGentleChime,
+    getPreferences,
+    applyPreferences
   };
 
   if (document.readyState === 'loading') {
