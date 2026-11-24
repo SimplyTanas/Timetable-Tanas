@@ -35,68 +35,67 @@
 <body class="transition-colors duration-200">
 
   <!-- Top Navigation Header (Sketchy Doodle Bar) -->
-  <header class="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur border-b-2 border-stone-800 dark:border-stone-200 px-4 py-3 shadow-[0_3px_0px_#292524] dark:shadow-[0_3px_0px_#f5f5f4]">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+  <header id="app-header" class="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b-2 border-stone-800 dark:border-stone-200 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_3px_0px_#292524] dark:shadow-[0_3px_0px_#f5f5f4]">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 md:gap-3">
       
       <!-- Logo & Title -->
-      <div class="flex items-center space-x-3">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-200 via-amber-100 to-sky-200 border-2 border-stone-800 dark:border-stone-100 flex items-center justify-center shadow-[2px_2px_0px_#292524] overflow-hidden p-0.5 flex-shrink-0">
+      <div class="order-1 flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1 md:flex-initial">
+        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-pink-200 via-amber-100 to-sky-200 border-2 border-stone-800 dark:border-stone-100 flex items-center justify-center shadow-[2px_2px_0px_#292524] overflow-hidden p-0.5 flex-shrink-0">
           <img src="./logo.png" alt="Logo Thời Gian Biểu" class="w-full h-full object-contain">
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-black tracking-tight text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-              Thời Gian Biểu Tanas
-            </h1>
-          </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 font-medium">Sổ tay đa tỷ lệ cho điện thoại &amp; máy tính</p>
+        <div class="min-w-0">
+          <h1 class="text-sm sm:text-lg font-black tracking-tight text-stone-800 dark:text-stone-100 truncate">
+            Thời Gian Biểu Tanas
+          </h1>
+          <p class="hidden sm:block text-xs text-stone-500 dark:text-stone-400 font-medium">Sổ tay vẽ tay cho điện thoại &amp; máy tính</p>
         </div>
       </div>
 
-      <!-- Center: Screen Ratio Switcher (Mô phỏng tỷ lệ màn hình) -->
-      <div class="flex items-center bg-stone-100 dark:bg-stone-800 p-1.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 shadow-[2px_2px_0px_#292524] text-xs font-bold gap-1">
-        <button id="btn-mode-auto" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Tự động theo kích thước cửa sổ">
-          <span data-sketchy="auto" data-size="15"></span>
-          <span class="hidden sm:inline">Tự Động</span>
+      <!-- Always-Visible Primary Controls (Compact on Phone) -->
+      <div class="order-2 md:order-3 flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <!-- New Task Button -->
+        <button id="btn-open-task-modal" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5">
+          <span data-sketchy="pencil" data-size="16" data-accent="#fef08a"></span>
+          <span class="sm:hidden">Việc</span>
+          <span class="hidden sm:inline">Thêm Việc</span>
         </button>
-        <button id="btn-mode-desktop" class="mode-btn btn-cute px-3 py-1 bg-amber-200 dark:bg-amber-900 text-stone-900 dark:text-white" title="Màn hình Máy tính 16:9">
-          <span data-sketchy="monitor" data-size="15" data-accent="#bae6fd"></span>
-          <span>Máy Tính (16:9)</span>
+
+        <!-- Admin User Management Button (visible to Admins only) -->
+        <button id="btn-open-admin" class="hidden btn-cute justify-center bg-amber-300 hover:bg-amber-400 text-stone-900 text-xs sm:text-sm p-2 lg:px-2.5 lg:py-1.5 shadow-[2px_2px_0px_#292524]" title="Quản lý người dùng (Admin)">
+          <span data-sketchy="shield" data-size="16" data-accent="#fef08a"></span>
+          <span class="hidden lg:inline font-black">Quản lý người dùng</span>
         </button>
-        <button id="btn-mode-tablet" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Máy tính bảng 3:4">
-          <span data-sketchy="tablet" data-size="15" data-accent="#e9d5ff"></span>
-          <span>Tablet</span>
+
+        <!-- Account Login / Profile Button -->
+        <button id="btn-open-auth" class="btn-cute justify-center bg-rose-200 hover:bg-rose-300 text-stone-900 text-xs sm:text-sm p-2 min-[420px]:px-2.5 min-[420px]:py-1.5 shadow-[2px_2px_0px_#292524]" title="Tài khoản &amp; Đồng bộ máy chủ">
+          <span id="icon-auth-status" data-sketchy="user" data-size="16" data-accent="#fecdd3"></span>
+          <span id="header-auth-label" class="hidden min-[420px]:inline max-w-[74px] sm:max-w-none truncate font-black">Đăng nhập</span>
         </button>
-        <button id="btn-mode-mobile" class="mode-btn btn-cute px-3 py-1 bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200" title="Điện thoại 9:16">
-          <span data-sketchy="smartphone" data-size="15" data-accent="#fbcfe8"></span>
-          <span>Điện Thoại (9:16)</span>
+
+        <!-- Mobile Tools Menu Toggle -->
+        <button id="btn-mobile-tools-toggle" type="button" aria-expanded="false" aria-controls="header-tools-panel" class="md:hidden btn-cute justify-center bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-100 p-2 relative" title="Mở thêm công cụ">
+          <span data-sketchy="grid" data-size="16" data-accent="#fde68a"></span>
         </button>
       </div>
 
-      <!-- Right Action Controls -->
-      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-        <!-- New Task Button -->
-        <button id="btn-open-task-modal" class="btn-cute bg-pink-400 hover:bg-pink-500 text-stone-900 text-xs sm:text-sm px-3 py-1.5">
-          <span data-sketchy="pencil" data-size="16" data-accent="#fef08a"></span>
-          <span>Thêm Việc</span>
-        </button>
-
+      <!-- Secondary Tools Panel (Inline on Desktop/Tablet, Expandable Grid on Mobile) -->
+      <div id="header-tools-panel" class="order-3 md:order-2 hidden md:flex w-full md:w-auto flex-wrap items-center gap-1.5 sm:gap-2 pt-2 md:pt-0 border-t-2 md:border-t-0 border-dashed border-stone-300 dark:border-stone-700">
         <!-- New Board Button -->
         <button id="btn-open-board-modal" class="btn-cute bg-sky-200 hover:bg-sky-300 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5" title="Thêm bảng mới">
           <span data-sketchy="clipboard" data-size="16" data-accent="#ffffff"></span>
-          <span class="hidden lg:inline">Thêm Bảng</span>
+          <span class="md:hidden lg:inline">Thêm Bảng</span>
         </button>
 
         <!-- Export All Days As 1 Image Button -->
         <button id="btn-open-image-modal" class="btn-cute bg-rose-300 hover:bg-rose-400 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Xuất tất cả ngày trong tuần thành 1 bức ảnh">
           <span data-sketchy="camera" data-size="16" data-accent="#ffffff"></span>
-          <span class="hidden sm:inline">Xuất Ảnh</span>
+          <span class="md:hidden sm:inline">Xuất Ảnh</span>
         </button>
 
         <!-- Focus Music & YouTube Widget Toggle -->
         <button id="btn-toggle-music-widget" class="btn-cute bg-emerald-200 hover:bg-emerald-300 text-stone-900 text-xs px-2.5 py-1.5" title="Góc Nhạc &amp; YouTube">
           <span data-sketchy="headphones" data-size="16" data-accent="#fef08a"></span>
-          <span class="hidden xl:inline">Nhạc</span>
+          <span class="md:hidden xl:inline">Nhạc</span>
         </button>
 
         <!-- Pomodoro Timer Toggle -->
@@ -108,49 +107,43 @@
         <!-- AI Assistant Drawer Toggle -->
         <button id="btn-toggle-ai-drawer" class="btn-cute bg-indigo-300 hover:bg-indigo-400 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Trợ Lý AI (Ghi chú, mở nhạc, tư vấn)">
           <span data-sketchy="bot" data-size="16" data-accent="#fef08a"></span>
-          <span class="hidden sm:inline font-black">Trợ Lý AI</span>
+          <span class="md:hidden sm:inline font-black">Trợ Lý AI</span>
         </button>
 
         <!-- Browser Notification Toggle -->
         <button id="btn-toggle-notifications" class="btn-cute bg-stone-100 hover:bg-yellow-100 text-stone-800 p-2 relative" title="Bật/Tắt thông báo nhắc lịch">
           <span id="icon-notif-bell" data-sketchy="bell-off" data-size="16"></span>
+          <span class="md:hidden">Nhắc lịch</span>
         </button>
 
         <!-- Template Selector -->
         <button id="btn-open-templates-modal" class="btn-cute bg-yellow-200 hover:bg-yellow-300 text-stone-900 p-2" title="Mẫu thời gian biểu có sẵn">
           <span data-sketchy="layers" data-size="16" data-accent="#ffffff"></span>
+          <span class="md:hidden">Mẫu</span>
         </button>
 
         <!-- Icons & Sticker Library Button -->
         <button id="btn-open-icons-modal" class="btn-cute bg-teal-200 hover:bg-teal-300 text-stone-900 p-2" title="Kho Sticker &amp; Icon Sketchy">
           <span data-sketchy="sparkles" data-size="16" data-accent="#fef08a"></span>
+          <span class="md:hidden">Sticker</span>
         </button>
 
         <!-- Print/PDF Button -->
         <button id="btn-print" class="btn-cute bg-green-200 hover:bg-green-300 text-stone-900 p-2" title="In hoặc Xuất PDF sổ tay">
           <span data-sketchy="printer" data-size="16" data-accent="#ffffff"></span>
+          <span class="md:hidden">In / PDF</span>
         </button>
 
         <!-- Backup/Restore JSON -->
         <button id="btn-backup" class="btn-cute bg-purple-200 hover:bg-purple-300 text-stone-900 p-2" title="Sao lưu &amp; Khôi phục">
           <span data-sketchy="save" data-size="16" data-accent="#ffffff"></span>
+          <span class="md:hidden">Sao lưu</span>
         </button>
 
         <!-- Dark/Light Mode Toggle -->
         <button id="btn-toggle-theme" class="btn-cute bg-orange-200 hover:bg-orange-300 text-stone-900 p-2" title="Đổi màu ngày / đêm">
           <span id="icon-theme-emoji" data-sketchy="moon" data-size="16" data-accent="#fef08a"></span>
-        </button>
-
-        <!-- Admin User Management Button (visible to Admins only) -->
-        <button id="btn-open-admin" class="hidden btn-cute bg-amber-300 hover:bg-amber-400 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Quản lý người dùng (Admin)">
-          <span data-sketchy="shield" data-size="16" data-accent="#fef08a"></span>
-          <span class="hidden md:inline font-black">Quản lý người dùng</span>
-        </button>
-
-        <!-- Account Login / Profile Button -->
-        <button id="btn-open-auth" class="btn-cute bg-rose-200 hover:bg-rose-300 text-stone-900 text-xs sm:text-sm px-2.5 py-1.5 shadow-[2px_2px_0px_#292524]" title="Tài khoản &amp; Đồng bộ máy chủ">
-          <span id="icon-auth-status" data-sketchy="user" data-size="16" data-accent="#fecdd3"></span>
-          <span id="header-auth-label" class="hidden sm:inline font-black">Đăng nhập</span>
+          <span class="md:hidden">Giao diện</span>
         </button>
       </div>
 
@@ -158,55 +151,55 @@
   </header>
 
   <!-- Filter & Sticky Progress Bar -->
-  <section class="max-w-7xl mx-auto px-4 pt-4 pb-2">
-    <div class="sketch-box bg-white dark:bg-stone-900 p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+  <section class="max-w-7xl mx-auto px-3 pt-4 pb-1.5 sm:px-4 sm:pt-4 sm:pb-2">
+    <div class="sketch-box bg-white dark:bg-stone-900 p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 relative">
       
       <!-- Washi tape on progress banner -->
       <div class="washi-tape mint"></div>
 
       <!-- Progress and Metrics -->
-      <div class="flex items-center gap-4 w-full md:w-auto">
-        <div class="relative w-14 h-14 flex-shrink-0">
-          <svg class="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+      <div class="flex items-center gap-3 sm:gap-4 w-full md:w-auto">
+        <div class="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
+          <svg class="w-12 h-12 sm:w-14 sm:h-14 transform -rotate-90" viewBox="0 0 36 36">
             <path class="text-stone-200 dark:text-stone-800" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
             <path id="stat-progress-ring" class="text-pink-500 transition-all duration-500 ease-out" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
           </svg>
-          <div class="absolute inset-0 flex items-center justify-center text-xs font-black" id="stat-percent-text">0%</div>
+          <div class="absolute inset-0 flex items-center justify-center text-[11px] sm:text-xs font-black" id="stat-percent-text">0%</div>
         </div>
-        <div>
-          <div class="text-sm font-bold flex flex-wrap items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="text-xs sm:text-sm font-bold flex flex-wrap items-center gap-1.5 sm:gap-2">
             <span>Tiến độ hoàn thành</span>
-            <span id="stat-summary-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-yellow-200 text-stone-800 border border-yellow-400 font-bold">0/0 việc</span>
-            <span id="stat-streak-badge" class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-400 font-bold inline-flex items-center gap-1" title="Chuỗi ngày có hoàn thành việc">
+            <span id="stat-summary-badge" class="text-[11px] sm:text-xs px-2 sm:px-2.5 py-0.5 rounded-full bg-yellow-200 text-stone-800 border border-yellow-400 font-bold">0/0 việc</span>
+            <span id="stat-streak-badge" class="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-400 font-bold inline-flex items-center gap-1" title="Chuỗi ngày có hoàn thành việc">
               <span data-sketchy="flame" data-size="13" data-accent="#fb923c"></span>
               <span id="stat-streak-text">0 ngày</span>
             </span>
           </div>
-          <p class="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-medium" id="stat-status-message">Kế hoạch theo dõi công việc trong tuần</p>
+          <p class="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-medium truncate" id="stat-status-message">Kế hoạch theo dõi công việc trong tuần</p>
         </div>
       </div>
 
       <!-- Search & Filters -->
       <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
         <!-- Search Input -->
-        <div class="relative flex-1 sm:w-60">
+        <div class="relative w-full sm:w-60 sm:flex-initial">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-300" data-sketchy="search" data-size="15"></span>
           <input type="text" id="input-search" placeholder="Tìm việc cần làm..." class="w-full pl-9 pr-3 py-1.5 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-400">
         </div>
 
         <!-- Filter Status -->
-        <select id="select-filter-status" class="py-1.5 px-3 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 text-stone-800 dark:text-stone-200">
+        <select id="select-filter-status" class="flex-1 sm:flex-initial py-1.5 px-3 bg-stone-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-300 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 text-stone-800 dark:text-stone-200">
           <option value="all">Tất cả việc</option>
           <option value="pending">Chưa xong</option>
           <option value="completed">Đã xong</option>
         </select>
 
         <!-- View layout toggles -->
-        <div class="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl border-2 border-stone-800 dark:border-stone-300">
-          <button id="btn-layout-columns" class="p-1 rounded-lg bg-pink-200 text-stone-900 border border-stone-800 shadow-sm" title="Xem dạng bảng trượt">
+        <div class="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl border-2 border-stone-800 dark:border-stone-300 flex-shrink-0">
+          <button id="btn-layout-columns" class="p-1.5 sm:p-1 rounded-lg bg-pink-200 text-stone-900 border border-stone-800 shadow-sm" title="Xem từng ngày / dạng bảng trượt">
             <span data-sketchy="columns" data-size="16"></span>
           </button>
-          <button id="btn-layout-grid" class="p-1 rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-white" title="Xem dạng lưới">
+          <button id="btn-layout-grid" class="p-1.5 sm:p-1 rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-white" title="Xem tất cả các ngày dạng lưới">
             <span data-sketchy="grid" data-size="16"></span>
           </button>
         </div>
@@ -216,8 +209,8 @@
   </section>
 
   <!-- Data Sync Banner (Chuyển dữ liệu mượt giữa file:// và bản .bat localhost) -->
-  <section id="data-migration-banner" class="hidden max-w-7xl mx-auto px-4 pb-1 no-print">
-    <div class="px-4 py-2.5 rounded-2xl border-2 border-stone-800 dark:border-stone-200 bg-amber-100/95 dark:bg-amber-950/70 shadow-[2px_2px_0px_#292524] flex flex-wrap items-center justify-between gap-2 text-xs">
+  <section id="data-migration-banner" class="hidden max-w-7xl mx-auto px-3 sm:px-4 pb-1 no-print">
+    <div class="px-3 sm:px-4 py-2.5 rounded-2xl border-2 border-stone-800 dark:border-stone-200 bg-amber-100/95 dark:bg-amber-950/70 shadow-[2px_2px_0px_#292524] flex flex-wrap items-center justify-between gap-2 text-xs">
       <div class="flex items-center gap-2 min-w-0">
         <span data-sketchy="save" data-size="16" data-accent="#fef08a"></span>
         <span id="migration-banner-text" class="font-bold text-stone-800 dark:text-stone-100"></span>
@@ -231,24 +224,15 @@
   </section>
 
   <!-- Mobile Quick Board Tabs (Kéo trượt qua lại mượt mà) -->
-  <div id="mobile-tabs-container" class="hidden drag-scroll-x px-4 py-2 overflow-x-auto flex gap-2 no-scrollbar border-b-2 border-stone-800 dark:border-stone-300 bg-white/70 dark:bg-stone-900/70 sticky top-[68px] z-30 backdrop-blur">
+  <div id="mobile-tabs-container" class="hidden drag-scroll-x px-3 py-2.5 overflow-x-auto flex items-center gap-2 no-scrollbar border-b-2 border-stone-800 dark:border-stone-300 bg-white/95 dark:bg-stone-900/95 sticky top-14 z-30 backdrop-blur">
     <!-- Rendered dynamically with cute chips -->
   </div>
 
-  <!-- Stage Area (Device Simulator Container) -->
+  <!-- Stage Area (Responsive Schedule Container) -->
   <main class="simulator-stage">
-    <div id="device-wrapper" class="device-container mode-desktop">
-      
-      <!-- Device header indicator (for simulator mode) -->
-      <div id="simulator-info" class="hidden px-4 py-2 bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-200 text-xs flex justify-between items-center border-b-2 border-stone-800 font-bold">
-        <span class="flex items-center gap-1.5">
-          <span data-sketchy="rabbit" data-size="16"></span>
-          Mô phỏng tỷ lệ: <span id="current-mode-label" class="underline decoration-pink-500 font-black">Máy tính</span>
-        </span>
-        <button id="btn-reset-zoom" class="hover:underline text-[11px] font-bold">Về máy tính (16:9) →</button>
-      </div>
+    <div id="device-wrapper" class="device-container">
 
-      <!-- Boards Container (Kéo trượt ngang qua lại thoải mái) -->
+      <!-- Boards Container (Kéo trượt ngang trên máy tính, từng ngày / dọc trên điện thoại) -->
       <div id="boards-container" class="boards-grid drag-scroll-x p-4 min-h-[550px]">
         <!-- Dynamic boards injected here -->
       </div>
@@ -257,20 +241,20 @@
   </main>
 
   <!-- Modal: Thêm / Chỉnh Sửa Việc Cần Làm -->
-  <div id="modal-task" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-lg max-h-[92vh] flex flex-col p-0 relative">
+  <div id="modal-task" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-lg max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape pink"></div>
       
-      <div class="drag-window-handle px-6 py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-pink-50 dark:bg-pink-950/40 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
+      <div class="drag-window-handle px-4 py-3 sm:px-6 sm:py-3.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-pink-50 dark:bg-pink-950/40 rounded-t-2xl flex-shrink-0 cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
         <div class="flex items-center gap-2">
-          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+          <span data-sketchy="grip" data-size="15" class="opacity-50 hidden sm:inline"></span>
           <span data-sketchy="pencil" data-size="18" data-accent="#fef08a"></span>
-          <h3 id="modal-task-title" class="font-black text-base text-stone-800 dark:text-stone-100">Viết Việc Cần Làm Mới</h3>
+          <h3 id="modal-task-title" class="font-black text-sm sm:text-base text-stone-800 dark:text-stone-100">Viết Việc Cần Làm Mới</h3>
         </div>
-        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold px-1">✕</button>
       </div>
 
-      <form id="form-task" class="p-5 space-y-3.5 overflow-y-auto flex-1">
+      <form id="form-task" class="p-4 sm:p-5 space-y-3 sm:space-y-3.5 overflow-y-auto flex-1">
         <input type="hidden" id="task-id">
 
         <!-- Board Selection -->
@@ -353,7 +337,7 @@
         </div>
 
         <!-- Category & Priority -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-1 flex items-center gap-1"><span data-sketchy="tag" data-size="13"></span> Phân loại / Thẻ</label>
             <select id="task-category" class="w-full px-3.5 py-2 rounded-xl border-2 border-stone-800 dark:border-stone-300 bg-stone-50 dark:bg-stone-800 text-sm font-bold focus:ring-2 focus:ring-pink-400 focus:outline-none">
@@ -439,20 +423,20 @@
   </div>
 
   <!-- Modal: Thêm / Sửa Bảng -->
-  <div id="modal-board" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+  <div id="modal-board" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape yellow"></div>
       
-      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-yellow-50 dark:bg-yellow-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
-        <h3 id="modal-board-title" class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
-          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+      <div class="drag-window-handle px-4 py-3 sm:px-6 sm:py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-yellow-50 dark:bg-yellow-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none flex-shrink-0" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 id="modal-board-title" class="font-black text-sm sm:text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50 hidden sm:inline"></span>
           <span data-sketchy="clipboard" data-size="18" data-accent="#fef08a"></span>
           <span>Thêm Bảng Kế Hoạch</span>
         </h3>
-        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold px-1">✕</button>
       </div>
 
-      <form id="form-board" class="p-6 space-y-4">
+      <form id="form-board" class="p-4 sm:p-6 space-y-4 overflow-y-auto">
         <input type="hidden" id="board-id">
 
         <div>
@@ -485,19 +469,19 @@
   </div>
 
   <!-- Modal: Chọn Mẫu Sẵn (Templates Modal) -->
-  <div id="modal-templates" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+  <div id="modal-templates" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape blue"></div>
       
-      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-sky-50 dark:bg-sky-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
-        <h3 class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
-          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+      <div class="drag-window-handle px-4 py-3 sm:px-6 sm:py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-sky-50 dark:bg-sky-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none flex-shrink-0" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 class="font-black text-sm sm:text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50 hidden sm:inline"></span>
           <span data-sketchy="layers" data-size="18" data-accent="#bae6fd"></span>
           <span>Chọn Mẫu Thời Gian Biểu</span>
         </h3>
-        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold px-1">✕</button>
       </div>
-      <div class="p-6 space-y-3">
+      <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
         <p class="text-xs text-stone-500 font-medium mb-3">Chọn mẫu lịch phù hợp (lưu ý: sẽ áp dụng bộ bảng mới):</p>
         
         <button class="btn-apply-template w-full text-left p-3.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 hover:bg-pink-100 dark:hover:bg-pink-950/40 transition flex items-start gap-3 shadow-[2px_2px_0px_#292524]" data-template="weekly">
@@ -528,19 +512,19 @@
   </div>
 
   <!-- Modal: Sao Lưu / Phục Hồi Dữ Liệu -->
-  <div id="modal-backup" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md p-0 relative">
+  <div id="modal-backup" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape purple"></div>
       
-      <div class="drag-window-handle px-6 py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-purple-50 dark:bg-purple-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
-        <h3 class="font-black text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
-          <span data-sketchy="grip" data-size="15" class="opacity-50"></span>
+      <div class="drag-window-handle px-4 py-3 sm:px-6 sm:py-4 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-purple-50 dark:bg-purple-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none flex-shrink-0" title="Kéo thanh tiêu đề để di chuyển khung">
+        <h3 class="font-black text-sm sm:text-base text-stone-800 dark:text-stone-100 flex items-center gap-2">
+          <span data-sketchy="grip" data-size="15" class="opacity-50 hidden sm:inline"></span>
           <span data-sketchy="save" data-size="18" data-accent="#e9d5ff"></span>
           <span>Sao Lưu &amp; Nhập Sổ Tay</span>
         </h3>
-        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold">✕</button>
+        <button class="btn-close-modal text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 text-lg font-bold px-1">✕</button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-4 sm:p-6 space-y-4 overflow-y-auto">
         <div>
           <label class="block text-xs font-bold text-stone-700 dark:text-stone-200 mb-2">Tải file lưu về máy (.json)</label>
           <button id="btn-export-json" class="btn-cute w-full justify-center bg-purple-300 hover:bg-purple-400 text-stone-900 py-2.5 px-4 text-xs font-black">
@@ -569,8 +553,8 @@
   </div>
 
   <!-- Modal: Kho Icon & Sticker (Irasutoya, Sketchy Hand-Drawn & Dashboard-Icons) -->
-  <div id="modal-icons" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[90vh] flex flex-col p-0 relative">
+  <div id="modal-icons" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape mint"></div>
 
       <!-- Header -->
@@ -642,8 +626,8 @@
   </div>
 
   <!-- Modal: Xuất Tất Cả Ngày Thành 1 Bức Ảnh (1-Image Poster Export) -->
-  <div id="modal-export-image" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[92vh] flex flex-col p-0 relative">
+  <div id="modal-export-image" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 hidden">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-2xl max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape coral"></div>
       
       <!-- Modal Header -->
@@ -716,7 +700,7 @@
             <span class="text-[11px] text-pink-600 dark:text-pink-400 font-bold" id="poster-ratio-badge">Tỷ lệ: 9:16 (Điện thoại)</span>
           </div>
           
-          <div class="border-2 border-dashed border-stone-400 dark:border-stone-600 rounded-2xl p-2 bg-stone-100 dark:bg-stone-800/50 flex justify-center items-center overflow-auto max-h-[360px]">
+          <div id="poster-preview-box" class="border-2 border-dashed border-stone-400 dark:border-stone-600 rounded-2xl p-2 bg-stone-100 dark:bg-stone-800/50 flex justify-center items-center overflow-auto max-h-[340px] sm:max-h-[360px]">
             <!-- Preview wrapper scaling -->
             <div id="poster-preview-container" class="transform-gpu transition-all duration-300">
               <!-- Dynamically populated poster -->
@@ -747,7 +731,7 @@
   </div>
 
   <!-- Floating Focus Music & YouTube Widget ("Đài Radio Bàn Học") -->
-  <div id="music-widget" class="fixed bottom-4 left-4 z-40 w-[340px] max-w-[92vw] sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
+  <div id="music-widget" class="fixed bottom-2 left-2 right-2 sm:right-auto sm:bottom-4 sm:left-4 z-40 w-auto sm:w-[340px] sm:max-w-[92vw] max-h-[85dvh] overflow-y-auto sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
     <div class="washi-tape mint"></div>
     <div class="drag-window-handle px-4 py-2.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
       <div class="flex items-center gap-1.5">
@@ -829,13 +813,13 @@
   </div>
 
   <!-- Minimized Music Pill -->
-  <button id="music-mini-pill" class="fixed bottom-4 left-4 z-40 btn-cute bg-emerald-200 hover:bg-emerald-300 text-stone-900 px-3 py-1.5 text-xs font-black hidden no-print" title="Mở lại góc nhạc">
+  <button id="music-mini-pill" class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-40 btn-cute bg-emerald-200 hover:bg-emerald-300 text-stone-900 px-3 py-1.5 text-xs font-black max-w-[46vw] truncate hidden no-print" title="Mở lại góc nhạc">
     <span data-sketchy="headphones" data-size="15" data-accent="#a7f3d0"></span>
     <span id="music-mini-label">Đang phát nhạc</span>
   </button>
 
   <!-- Floating Pomodoro Timer Popover -->
-  <div id="pomodoro-widget" class="fixed top-28 left-1/2 -translate-x-1/2 z-[55] w-[300px] max-w-[92vw] sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
+  <div id="pomodoro-widget" class="fixed top-16 sm:top-28 left-1/2 -translate-x-1/2 z-[55] w-[calc(100vw-1rem)] max-w-[340px] sm:w-[300px] sketch-box bg-white dark:bg-stone-900 p-0 hidden no-print">
     <div class="washi-tape yellow"></div>
     <div class="drag-window-handle px-4 py-2.5 border-b-2 border-stone-800 dark:border-stone-200 flex items-center justify-between bg-amber-50 dark:bg-amber-950/40 rounded-t-2xl cursor-grab active:cursor-grabbing select-none" title="Kéo thanh tiêu đề để di chuyển khung">
       <div class="flex items-center gap-1.5">
@@ -867,13 +851,13 @@
   </div>
 
   <!-- Floating AI Assistant Button (Bottom Right) -->
-  <button id="btn-ai-fab" class="fixed bottom-5 right-5 z-40 btn-cute bg-indigo-400 hover:bg-indigo-500 text-stone-900 px-4 py-2.5 text-xs sm:text-sm font-black shadow-[3px_3px_0px_#292524] flex items-center gap-2 no-print" title="Mở Trợ Lý AI">
+  <button id="btn-ai-fab" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-40 btn-cute bg-indigo-400 hover:bg-indigo-500 text-stone-900 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-black shadow-[3px_3px_0px_#292524] flex items-center gap-1.5 sm:gap-2 no-print" title="Mở Trợ Lý AI">
     <span data-sketchy="bot" data-size="18" data-accent="#e0e7ff"></span>
     <span>Hỏi Trợ Lý AI</span>
   </button>
 
   <!-- AI Assistant Chat Panel (Doodle Notebook Drawer) -->
-  <div id="ai-chat-panel" class="fixed bottom-4 right-4 z-50 w-[390px] max-w-[94vw] h-[540px] max-h-[82vh] sketch-box bg-white dark:bg-stone-900 p-0 flex flex-col hidden no-print">
+  <div id="ai-chat-panel" class="fixed bottom-2 left-2 right-2 sm:left-auto sm:bottom-4 sm:right-4 z-50 w-auto sm:w-[390px] sm:max-w-[94vw] h-[78dvh] sm:h-[540px] max-h-[86dvh] sm:max-h-[82vh] sketch-box bg-white dark:bg-stone-900 p-0 flex flex-col hidden no-print">
     <div class="washi-tape purple"></div>
 
     <!-- Chat Header -->
@@ -965,8 +949,8 @@
   </div>
 
   <!-- Modal: Đăng Nhập / Đăng Ký / Tài Khoản (Ghi nhớ 30 ngày) -->
-  <div id="modal-auth" class="fixed inset-0 z-[58] bg-stone-900/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden no-print">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md flex flex-col p-0 relative">
+  <div id="modal-auth" class="fixed inset-0 z-[58] bg-stone-900/65 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 hidden no-print">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-md max-h-[94dvh] flex flex-col p-0 relative">
       <div class="washi-tape pink"></div>
 
       <!-- Modal Header -->
@@ -985,7 +969,7 @@
       </div>
 
       <!-- Logged-out View: Login & Register Tabs -->
-      <div id="auth-logged-out-view" class="p-5 space-y-4">
+      <div id="auth-logged-out-view" class="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
         <div id="auth-offline-notice" class="hidden p-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-[11px] font-bold text-amber-800 dark:text-amber-200">
           Bạn đang mở trực tiếp từ <code class="px-1 rounded bg-amber-200/70 dark:bg-stone-800">file://</code>. Hãy chạy bằng <strong>Mo-Thoi-Gian-Bieu.bat</strong> hoặc triển khai lên server Node.js để đăng nhập &amp; lưu tài khoản.
         </div>
@@ -1051,7 +1035,7 @@
       </div>
 
       <!-- Logged-in View: Account Profile & Cloud Sync -->
-      <div id="auth-logged-in-view" class="hidden p-5 space-y-3.5 text-xs">
+      <div id="auth-logged-in-view" class="hidden p-4 sm:p-5 space-y-3 sm:space-y-3.5 text-xs overflow-y-auto flex-1">
         <div class="p-3.5 rounded-2xl border-2 border-stone-800 dark:border-stone-300 bg-emerald-50/80 dark:bg-emerald-950/40 flex items-center gap-3">
           <div class="w-11 h-11 rounded-2xl bg-emerald-200 dark:bg-emerald-900 border-2 border-stone-800 dark:border-stone-200 flex items-center justify-center flex-shrink-0 text-stone-900 dark:text-white">
             <span data-sketchy="cloud" data-size="22" data-accent="#ffffff"></span>
@@ -1088,7 +1072,7 @@
             <label for="profile-display-name" class="block text-[11px] font-bold text-stone-600 dark:text-stone-300 mb-1">Tên hiển thị</label>
             <input type="text" id="profile-display-name" maxlength="50" required class="w-full px-3 py-1.5 rounded-xl border-2 border-stone-800 dark:border-stone-500 bg-white dark:bg-stone-900 font-bold text-xs focus:outline-none">
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label for="profile-current-pass" class="block text-[11px] font-bold text-stone-600 dark:text-stone-300 mb-1">Mật khẩu cũ</label>
               <input type="password" id="profile-current-pass" autocomplete="current-password" placeholder="Nếu đổi mật khẩu" class="w-full px-2.5 py-1.5 rounded-xl border border-stone-400 dark:border-stone-600 bg-white dark:bg-stone-900 text-xs focus:outline-none">
@@ -1124,12 +1108,12 @@
   </div>
 
   <!-- Admin User Management Modal -->
-  <div id="modal-admin" class="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden relative">
+  <div id="modal-admin" class="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="sketch-box bg-white dark:bg-stone-900 w-full max-w-5xl max-h-[94dvh] flex flex-col relative">
       <div class="washi-tape yellow"></div>
 
       <!-- Modal Header (Draggable Handle) -->
-      <div class="drag-window-handle bg-amber-200/80 dark:bg-amber-950/60 px-4 sm:px-5 py-3.5 border-b-2 border-stone-800 dark:border-stone-500 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+      <div class="drag-window-handle bg-amber-200/80 dark:bg-amber-950/60 px-4 sm:px-5 py-3.5 border-b-2 border-stone-800 dark:border-stone-500 rounded-t-2xl flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
         <div class="flex items-center gap-2.5 min-w-0">
           <span class="cursor-grab opacity-70" data-sketchy="grip" data-size="14"></span>
           <span data-sketchy="shield" data-size="22" data-accent="#fde047"></span>
@@ -1278,7 +1262,7 @@
   </div>
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none items-center"></div>
+  <div id="toast-container" class="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none items-center w-[calc(100vw-1.5rem)] sm:w-auto max-w-sm"></div>
 
   <!-- Sketchy Hand-Drawn SVG Icons & Animated Illustrations Engine -->
   <script src="sketchy.js"></script>

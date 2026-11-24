@@ -226,13 +226,28 @@ const TEMPLATES = {
 let state = {
   boards: [],
   tasks: [],
-  deviceMode: 'desktop', // 'auto', 'desktop', 'tablet', 'mobile'
   layout: 'columns',     // 'columns', 'grid'
   filterStatus: 'all',   // 'all', 'pending', 'completed'
   searchQuery: '',
   activeMobileBoardId: null,
   draggedTaskId: null
 };
+
+function isMobileViewport() {
+  return window.innerWidth < 768;
+}
+
+function findTodayBoardId() {
+  const todayBoard = state.boards.find(b => isBoardMatchingDay(b.title));
+  return todayBoard?.id || state.boards[0]?.id || null;
+}
+
+function syncMobileStickyOffset() {
+  const header = document.getElementById('app-header');
+  const mobileTabs = document.getElementById('mobile-tabs-container');
+  if (!header || !mobileTabs) return;
+  mobileTabs.style.top = `${header.offsetHeight}px`;
+}
 
 let modalSubtasks = [];
 
@@ -534,7 +549,7 @@ function persistToLocalDiskImmediate() {
   const payload = {
     boards: state.boards,
     tasks: state.tasks,
-    deviceMode: state.deviceMode,
+    deviceMode: isMobileViewport() ? 'mobile' : 'desktop',
     theme: localStorage.getItem(LS_KEYS.THEME) || 'light',
     streak: (() => {
       try { return JSON.parse(localStorage.getItem(LS_KEYS.STREAK) || 'null'); } catch (_) { return null; }
@@ -607,7 +622,7 @@ function setupMigrationBanner() {
       const payload = {
         boards: state.boards,
         tasks: state.tasks,
-        mode: state.deviceMode,
+        mode: isMobileViewport() ? 'mobile' : 'desktop',
         theme: localStorage.getItem(LS_KEYS.THEME) || 'light',
         streak: (() => { try { return JSON.parse(localStorage.getItem(LS_KEYS.STREAK) || 'null'); } catch (_) { return null; } })(),
         aiConfig: (() => { try { return JSON.parse(localStorage.getItem('schedule_ai_config_v1') || 'null'); } catch (_) { return null; } })()
@@ -666,11 +681,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncedFromUrl = handleIncomingUrlSync();
   loadData();
   setupEventListeners();
+  setupMobileSwipeNavigation();
   applySavedTheme();
   applyLayoutUI();
   renderAll();
   hydrateSketchy(document);
+  syncMobileStickyOffset();
   setupMigrationBanner();
+
+  let resizeTimer = null;
+  let lastMobileState = isMobileViewport();
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      syncMobileStickyOffset();
+      const nowMobile = isMobileViewport();
+      if (nowMobile !== lastMobileState) {
+        lastMobileState = nowMobile;
+        if (!nowMobile) {
+          const panel = document.getElementById('header-tools-panel');
+          panel?.classList.remove('is-mobile-open');
+          document.getElementById('btn-mobile-tools-toggle')?.setAttribute('aria-expanded', 'false');
+        }
+        renderAll();
+      } else if (!document.getElementById('modal-export-image')?.classList.contains('hidden')) {
+        updatePosterPreview();
+      }
+    }, 120);
+  });
 
   if (syncedFromUrl) {
     diskSyncReady = true;
@@ -728,7 +766,6 @@ function cleanLegacyLabels() {
 function loadData() {
   const savedBoards = localStorage.getItem(LS_KEYS.BOARDS);
   const savedTasks = localStorage.getItem(LS_KEYS.TASKS);
-  const savedMode = localStorage.getItem(LS_KEYS.MODE);
   const savedLayout = localStorage.getItem(LS_KEYS.LAYOUT);
 
   state.boards = savedBoards ? JSON.parse(savedBoards) : JSON.parse(JSON.stringify(DEFAULT_BOARDS));
@@ -739,17 +776,14 @@ function loadData() {
     localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
   }
 
-  if (savedMode) state.deviceMode = savedMode;
   if (savedLayout === 'grid' || savedLayout === 'columns') state.layout = savedLayout;
-  if (state.boards.length > 0) {
-    state.activeMobileBoardId = state.boards[0].id;
-  }
+  state.activeMobileBoardId = findTodayBoardId();
 }
 
 function saveData() {
   localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
   localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
-  localStorage.setItem(LS_KEYS.MODE, state.deviceMode);
+  localStorage.setItem(LS_KEYS.MODE, isMobileViewport() ? 'mobile' : 'desktop');
   localStorage.setItem(LS_KEYS.LAYOUT, state.layout);
   localStorage.setItem('schedule_last_saved_at', String(Date.now()));
   if (window.TanasAuth && typeof window.TanasAuth.isLoggedIn === 'function' && window.TanasAuth.isLoggedIn()) {
@@ -783,77 +817,111 @@ function applyLayoutUI(layout = state.layout) {
 
 // --- DOM Rendering ---
 function renderAll() {
-  renderDeviceMode();
   renderMobileTabs();
   renderBoards();
   renderStats();
   populateBoardSelectOptions();
   hydrateSketchy(document);
-}
-
-function renderDeviceMode() {
-  const wrapper = document.getElementById('device-wrapper');
-  const simInfo = document.getElementById('simulator-info');
-  const label = document.getElementById('current-mode-label');
-  const mobileTabs = document.getElementById('mobile-tabs-container');
-
-  wrapper.classList.remove('mode-auto', 'mode-desktop', 'mode-tablet', 'mode-mobile');
-  wrapper.classList.add(`mode-${state.deviceMode}`);
-
-  // Button states
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.classList.remove('bg-amber-200', 'dark:bg-amber-900', 'text-stone-900', 'dark:text-white');
-    btn.classList.add('bg-white', 'dark:bg-stone-700', 'text-stone-700', 'dark:text-stone-200');
-  });
-
-  const activeBtn = document.getElementById(`btn-mode-${state.deviceMode}`);
-  if (activeBtn) {
-    activeBtn.classList.add('bg-amber-200', 'dark:bg-amber-900', 'text-stone-900', 'dark:text-white');
-    activeBtn.classList.remove('bg-white', 'dark:bg-stone-700');
-  }
-
-  if (state.deviceMode === 'mobile') {
-    simInfo.classList.remove('hidden');
-    label.textContent = 'Điện Thoại (9:16 ~ 390x844px)';
-    mobileTabs.classList.remove('hidden');
-  } else if (state.deviceMode === 'tablet') {
-    simInfo.classList.remove('hidden');
-    label.textContent = 'Tablet (3:4 ~ 780px)';
-    mobileTabs.classList.add('hidden');
-  } else {
-    simInfo.classList.add('hidden');
-    mobileTabs.classList.add('hidden');
-  }
+  syncMobileStickyOffset();
 }
 
 function renderMobileTabs() {
   const container = document.getElementById('mobile-tabs-container');
-  if (state.deviceMode !== 'mobile') return;
+  if (!container) return;
+
+  if (!isMobileViewport() || state.boards.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+
+  if (!state.activeMobileBoardId || !state.boards.some(b => b.id === state.activeMobileBoardId)) {
+    state.activeMobileBoardId = findTodayBoardId();
+  }
 
   container.innerHTML = state.boards.map(board => {
     const isActive = board.id === state.activeMobileBoardId;
+    const isToday = isBoardMatchingDay(board.title);
     const taskCount = state.tasks.filter(t => t.boardId === board.id).length;
     return `
       <button 
+        type="button"
+        data-mobile-board-id="${board.id}"
         onclick="setActiveMobileBoard('${board.id}')"
-        class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition btn-cute ${
+        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition btn-cute ${
           isActive 
             ? 'bg-pink-400 text-stone-900 shadow-[2px_2px_0px_#292524]' 
             : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
         }"
       >
-        <span class="w-2.5 h-2.5 rounded-full border border-stone-800" style="background-color: ${board.color}"></span>
+        <span class="w-2.5 h-2.5 rounded-full border border-stone-800 flex-shrink-0" style="background-color: ${board.color}"></span>
         <span>${escapeHtml(board.title)}</span>
-        <span class="text-[10px] px-1.5 py-0.2 rounded-full border border-stone-800 ${isActive ? 'bg-white' : 'bg-stone-200 dark:bg-stone-700'}">${taskCount}</span>
+        ${isToday ? '<span class="w-1.5 h-1.5 rounded-full bg-rose-600 flex-shrink-0" title="Hôm nay"></span>' : ''}
+        <span class="text-[10px] px-1.5 py-0.2 rounded-full border border-stone-800 ${isActive ? 'bg-white text-stone-900' : 'bg-stone-200 dark:bg-stone-700'}">${taskCount}</span>
       </button>
     `;
   }).join('');
+
+  requestAnimationFrame(() => {
+    const activeChip = container.querySelector(`[data-mobile-board-id="${state.activeMobileBoardId}"]`);
+    if (activeChip) {
+      const targetLeft = activeChip.offsetLeft - (container.clientWidth / 2) + (activeChip.clientWidth / 2);
+      container.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+    }
+  });
 }
 
 function setActiveMobileBoard(boardId) {
   state.activeMobileBoardId = boardId;
   renderMobileTabs();
+  if (state.layout === 'grid') {
+    const el = document.querySelector(`.board-column[data-board-id="${boardId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
   renderBoards();
+  hydrateSketchy(document.getElementById('boards-container'));
+}
+
+function stepMobileBoard(delta) {
+  if (!isMobileViewport() || state.layout === 'grid' || state.boards.length < 2) return;
+  const idx = state.boards.findIndex(b => b.id === state.activeMobileBoardId);
+  if (idx === -1) return;
+  const nextIdx = (idx + delta + state.boards.length) % state.boards.length;
+  setActiveMobileBoard(state.boards[nextIdx].id);
+}
+
+function setupMobileSwipeNavigation() {
+  const container = document.getElementById('boards-container');
+  if (!container) return;
+  let touchStart = null;
+
+  container.addEventListener('touchstart', (e) => {
+    if (!isMobileViewport() || state.layout === 'grid' || e.touches.length !== 1) return;
+    if (e.target.closest('button, a, input, select, textarea, label')) return;
+    touchStart = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now()
+    };
+  }, { passive: true });
+
+  container.addEventListener('touchend', (e) => {
+    if (!touchStart || !isMobileViewport() || state.layout === 'grid' || e.changedTouches.length !== 1) {
+      touchStart = null;
+      return;
+    }
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    const dt = Date.now() - touchStart.time;
+    touchStart = null;
+    if (dt < 550 && Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      stepMobileBoard(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
 }
 
 function renderBoards() {
@@ -866,7 +934,7 @@ function renderBoards() {
   }
 
   let boardsToRender = state.boards;
-  if (state.deviceMode === 'mobile' && state.activeMobileBoardId) {
+  if (isMobileViewport() && state.layout !== 'grid' && state.activeMobileBoardId) {
     boardsToRender = state.boards.filter(b => b.id === state.activeMobileBoardId);
   }
 
@@ -1026,7 +1094,7 @@ function renderTaskCard(task, board = null) {
           type="checkbox" 
           ${isCompleted ? 'checked' : ''} 
           onchange="toggleTaskComplete('${task.id}')"
-          class="mt-1 w-4 h-4 rounded-md border-2 border-stone-800 text-pink-500 focus:ring-pink-400 cursor-pointer"
+          class="mt-0.5 sm:mt-1 w-5 h-5 sm:w-4 sm:h-4 rounded-md border-2 border-stone-800 text-pink-500 focus:ring-pink-400 cursor-pointer flex-shrink-0"
         >
         ${task.sketchyKey ? `
           <div class="w-9 h-9 rounded-xl bg-pink-50 dark:bg-stone-800 border-2 border-stone-800 dark:border-stone-500 flex items-center justify-center flex-shrink-0 text-stone-800 dark:text-stone-100 shadow-sm">
@@ -1079,10 +1147,10 @@ function renderTaskCard(task, board = null) {
         </div>
 
         <div class="flex items-center gap-2 ml-auto">
-          <button onclick="editTask('${task.id}')" class="text-[11px] font-bold text-stone-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition">
+          <button onclick="editTask('${task.id}')" class="text-[11px] font-bold text-stone-500 sm:text-stone-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 py-1 px-1.5 sm:p-0 rounded-lg transition">
             ${sketchyHtml('edit', { size: 12 })} Sửa
           </button>
-          <button onclick="deleteTask('${task.id}')" class="text-[11px] font-bold text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 transition">
+          <button onclick="deleteTask('${task.id}')" class="text-[11px] font-bold text-stone-500 sm:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 py-1 px-1.5 sm:p-0 rounded-lg transition">
             ${sketchyHtml('trash', { size: 12 })} Xóa
           </button>
         </div>
@@ -1491,25 +1559,29 @@ function deleteBoard(boardId) {
 
 // --- Event Listeners Setup ---
 function setupEventListeners() {
-  ['auto', 'desktop', 'tablet', 'mobile'].forEach(mode => {
-    const btn = document.getElementById(`btn-mode-${mode}`);
-    if (btn) {
-      btn.addEventListener('click', () => {
-        state.deviceMode = mode;
-        saveData();
-        renderAll();
-      });
-    }
+  const mobileToolsBtn = document.getElementById('btn-mobile-tools-toggle');
+  const toolsPanel = document.getElementById('header-tools-panel');
+  const closeMobileTools = () => {
+    if (!toolsPanel || !toolsPanel.classList.contains('is-mobile-open')) return;
+    toolsPanel.classList.remove('is-mobile-open');
+    mobileToolsBtn?.setAttribute('aria-expanded', 'false');
+    syncMobileStickyOffset();
+  };
+
+  mobileToolsBtn?.addEventListener('click', () => {
+    if (!toolsPanel) return;
+    const isOpen = toolsPanel.classList.toggle('is-mobile-open');
+    mobileToolsBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    syncMobileStickyOffset();
   });
 
-  const btnResetZoom = document.getElementById('btn-reset-zoom');
-  if (btnResetZoom) {
-    btnResetZoom.addEventListener('click', () => {
-      state.deviceMode = 'desktop';
-      saveData();
-      renderAll();
-    });
-  }
+  toolsPanel?.addEventListener('click', (e) => {
+    if (!isMobileViewport()) return;
+    const clickedBtn = e.target.closest('button');
+    if (clickedBtn && clickedBtn.id !== 'btn-toggle-theme' && clickedBtn.id !== 'btn-toggle-notifications') {
+      closeMobileTools();
+    }
+  });
 
   document.getElementById('btn-open-task-modal').addEventListener('click', () => openTaskModal());
   document.getElementById('btn-open-board-modal').addEventListener('click', () => openBoardModal());
@@ -1947,13 +2019,13 @@ function setupEventListeners() {
   btnCol?.addEventListener('click', () => {
     applyLayoutUI('columns');
     saveData();
-    renderBoards();
+    renderAll();
   });
 
   btnGrid?.addEventListener('click', () => {
     applyLayoutUI('grid');
     saveData();
-    renderBoards();
+    renderAll();
   });
 
   // Theme Toggle
@@ -1982,7 +2054,7 @@ function setupEventListeners() {
     if (confirm('Khôi phục lại dữ liệu mẫu gốc ban đầu?')) {
       state.boards = [...DEFAULT_BOARDS];
       state.tasks = [...DEFAULT_TASKS];
-      state.activeMobileBoardId = state.boards[0].id;
+      state.activeMobileBoardId = findTodayBoardId();
       saveData();
       const backupModal = document.getElementById('modal-backup');
       backupModal.classList.add('hidden');
@@ -2327,17 +2399,21 @@ function updatePosterPreview() {
   // Insert poster HTML
   previewContainer.innerHTML = generatePosterHTML(false);
 
-  // Apply preview scale so it fits nicely inside the modal preview container
+  // Apply preview scale so it fits cleanly inside modal on both desktop and mobile
   const format = posterConfig.format || 'mobile';
-  let scale = 0.26;
+  let baseScale = 0.26;
   let targetWidth = 720;
   if (format === 'desktop') {
-    scale = 0.38;
+    baseScale = 0.38;
     targetWidth = 1280;
   } else if (format === 'poster') {
-    scale = 0.30;
+    baseScale = 0.30;
     targetWidth = 900;
   }
+
+  const previewBox = document.getElementById('poster-preview-box');
+  const availWidth = Math.max(240, (previewBox?.clientWidth || (window.innerWidth - 48)) - 20);
+  const scale = Math.min(baseScale, availWidth / targetWidth);
 
   previewContainer.style.width = `${targetWidth}px`;
   previewContainer.style.transform = `scale(${scale})`;
@@ -2680,7 +2756,7 @@ window.ScheduleAPI = {
   getExportPayload: () => ({
     boards: state.boards,
     tasks: state.tasks,
-    deviceMode: state.deviceMode,
+    deviceMode: isMobileViewport() ? 'mobile' : 'desktop',
     layout: state.layout,
     theme: localStorage.getItem(LS_KEYS.THEME) || 'light',
     streak: (() => {
@@ -2695,7 +2771,6 @@ window.ScheduleAPI = {
     if (!data || !Array.isArray(data.boards) || !Array.isArray(data.tasks)) return false;
     state.boards = data.boards;
     state.tasks = data.tasks;
-    if (data.deviceMode) state.deviceMode = data.deviceMode;
     applyLayoutUI(data.layout || 'columns');
     if (data.theme) {
       localStorage.setItem(LS_KEYS.THEME, data.theme);
@@ -2712,14 +2787,14 @@ window.ScheduleAPI = {
     cleanLegacyLabels();
     localStorage.setItem(LS_KEYS.BOARDS, JSON.stringify(state.boards));
     localStorage.setItem(LS_KEYS.TASKS, JSON.stringify(state.tasks));
-    localStorage.setItem(LS_KEYS.MODE, state.deviceMode);
+    localStorage.setItem(LS_KEYS.MODE, isMobileViewport() ? 'mobile' : 'desktop');
     if (ownerId) {
       localStorage.setItem(LS_KEYS.DATA_OWNER, String(ownerId));
     }
     localStorage.setItem('schedule_last_saved_at', String(data.updatedAt || Date.now()));
     localStorage.setItem('schedule_sync_banner_dismissed', '1');
     if (state.boards.length > 0 && !state.boards.some(b => b.id === state.activeMobileBoardId)) {
-      state.activeMobileBoardId = state.boards[0].id;
+      state.activeMobileBoardId = findTodayBoardId();
     }
     renderAll();
     setupMigrationBanner();
@@ -2736,10 +2811,9 @@ window.ScheduleAPI = {
   resetToDefaultView: (ownerId = 'guest') => {
     state.boards = JSON.parse(JSON.stringify(DEFAULT_BOARDS));
     state.tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
-    state.deviceMode = 'desktop';
     state.filterStatus = 'all';
     state.searchQuery = '';
-    state.activeMobileBoardId = state.boards[0]?.id || null;
+    state.activeMobileBoardId = findTodayBoardId();
     localStorage.removeItem(LS_KEYS.BOARDS);
     localStorage.removeItem(LS_KEYS.TASKS);
     localStorage.removeItem(LS_KEYS.MODE);
